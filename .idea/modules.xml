@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/injegun_sosik.iml" filepath="$PROJECT_DIR$/injegun_sosik.iml" />
+      <module fileurl="file://$PROJECT_DIR$/android/injegun_sosik_android.iml" filepath="$PROJECT_DIR$/android/injegun_sosik_android.iml" />
+    </modules>
+  </component>
+</project>
