@@ -2,6 +2,17 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // 주간일정: 앱에서 목록 조회만 (쓰기는 Cloud Functions에서만)
+    match /weekschedules/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+    // 합강소식지: 앱에서 목록 조회만 (쓰기는 Cloud Functions에서만)
+    match /newsletters/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+    // 그 외 컬렉션: 기본 거부
     match /{document=**} {
       allow read, write: if false;
     }
