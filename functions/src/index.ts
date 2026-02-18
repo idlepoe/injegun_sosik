@@ -7,26 +7,40 @@
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
-import {setGlobalOptions} from "firebase-functions";
-import {onRequest} from "firebase-functions/https";
+import * as admin from "firebase-admin";
+import { setGlobalOptions } from "firebase-functions";
+import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+import { fetchWeekschedule } from "./models/fetchWeekschedule.js";
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
 setGlobalOptions({ maxInstances: 10 });
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+/**
+ * 주간일정 크롤링: 목록/상세를 articles에, 엑셀 데이터를 weekschedules에 저장
+ * GET 호출. 쿼리: maxListPages (최대 목록 페이지 수, 기본 1)
+ * Puppeteer/Chrome 사용으로 메모리 1GB, 타임아웃 5분
+ */
+export const fetchWeekscheduleFn = onRequest(
+  { maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
+  async (req, res) => {
+    if (req.method !== "GET") {
+      res.status(405).set("Allow", "GET").send("Method Not Allowed");
+      return;
+    }
+    const maxListPages = req.query.maxListPages
+      ? Number(req.query.maxListPages)
+      : 1;
+    try {
+      const result = await fetchWeekschedule({ maxListPages });
+      logger.info("fetchWeekschedule completed", result);
+      res.status(200).json(result);
+    } catch (err) {
+      logger.error("fetchWeekschedule failed", err);
+      res.status(500).json({ error: (err as Error).message });
+    }
+  }
+);
