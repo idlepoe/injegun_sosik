@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "611026964031",
+    "project_id": "injegun-sosik",
+    "storage_bucket": "injegun-sosik.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:611026964031:android:a43d058c38bbacd44a728a",
+        "android_client_info": {
+          "package_name": "com.jylee.injegun_sosik"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5xaBYqLlx7lCAjRttWsrnUNJe1KC7oIE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
