@@ -11,6 +11,7 @@ import * as admin from "firebase-admin";
 import { setGlobalOptions } from "firebase-functions";
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+import { fetchNewsletters } from "./models/fetchNewsletters.js";
 import { fetchWeekschedule } from "./models/fetchWeekschedule.js";
 
 if (!admin.apps.length) {
@@ -40,6 +41,30 @@ export const fetchWeekscheduleFn = onRequest(
       res.status(200).json(result);
     } catch (err) {
       logger.error("fetchWeekschedule failed", err);
+      res.status(500).json({ error: (err as Error).message });
+    }
+  }
+);
+
+/**
+ * 합강소식지 크롤링: 목록 파싱 후 PDF를 Storage에 저장, 메타데이터를 newsletters 컬렉션에 저장
+ * GET 호출. 쿼리: maxListPages (최대 목록 페이지 수, 기본 1)
+ * Puppeteer/Chrome + PDF 버퍼로 메모리 사용이 커서 4GB 권장 (fetchNewsletters.ts 주석 참고)
+ */
+export const fetchNewslettersFn = onRequest(
+  { maxInstances: 5, memory: "4GiB", timeoutSeconds: 300 },
+  async (req, res) => {
+    if (req.method !== "GET") {
+      res.status(405).set("Allow", "GET").send("Method Not Allowed");
+      return;
+    }
+    const maxListPages = req.query.maxListPages ? Number(req.query.maxListPages) : 1;
+    try {
+      const result = await fetchNewsletters({ maxListPages });
+      logger.info("fetchNewsletters completed", result);
+      res.status(200).json(result);
+    } catch (err) {
+      logger.error("fetchNewsletters failed", err);
       res.status(500).json({ error: (err as Error).message });
     }
   }
