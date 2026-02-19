@@ -7,6 +7,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 import 'repository/newsletter_repository.dart';
 import 'repository/weekschedule_repository.dart';
+import 'repository/weather_repository.dart';
 import 'screens/dashboard_screen.dart';
 
 void main() async {
@@ -41,6 +42,7 @@ class MyApp extends StatelessWidget {
       home: DashboardScreen(
         weekscheduleRepository: WeekscheduleRepository(),
         newsletterRepository: NewsletterRepository(),
+        weatherRepository: WeatherRepository(),
       ),
     );
   }

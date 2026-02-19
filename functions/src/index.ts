@@ -13,6 +13,8 @@ import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { fetchNewsletters } from "./models/fetchNewsletters.js";
 import { fetchWeekschedule } from "./models/fetchWeekschedule.js";
+import { fetchWeather } from "./models/fetchWeather.js";
+import { fetchNotice } from "./models/fetchNotice.js";
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -65,6 +67,52 @@ export const fetchNewslettersFn = onRequest(
       res.status(200).json(result);
     } catch (err) {
       logger.error("fetchNewsletters failed", err);
+      res.status(500).json({ error: (err as Error).message });
+    }
+  }
+);
+
+/**
+ * 날씨 데이터 가져오기: OpenWeatherMap Current Weather Data API를 사용하여 현재 날씨를 가져와서 weathers 컬렉션에 저장
+ * GET 호출. 날짜 기준으로 중복된 경우 기존 데이터를 업데이트
+ */
+export const fetchWeatherFn = onRequest(
+  { maxInstances: 10, memory: "256MiB", timeoutSeconds: 60 },
+  async (req, res) => {
+    if (req.method !== "GET") {
+      res.status(405).set("Allow", "GET").send("Method Not Allowed");
+      return;
+    }
+    try {
+      const result = await fetchWeather();
+      logger.info("fetchWeather completed", result);
+      res.status(200).json(result);
+    } catch (err) {
+      logger.error("fetchWeather failed", err);
+      res.status(500).json({ error: (err as Error).message });
+    }
+  }
+);
+
+/**
+ * 공지사항 크롤링: 목록/상세를 articles 컬렉션에 저장 (type: 'notice')
+ * GET 호출. 쿼리: maxListPages (최대 목록 페이지 수, 기본 1)
+ * Puppeteer/Chrome 사용으로 메모리 1GB, 타임아웃 5분
+ */
+export const fetchNoticeFn = onRequest(
+  { maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
+  async (req, res) => {
+    if (req.method !== "GET") {
+      res.status(405).set("Allow", "GET").send("Method Not Allowed");
+      return;
+    }
+    const maxListPages = req.query.maxListPages ? Number(req.query.maxListPages) : 1;
+    try {
+      const result = await fetchNotice({ maxListPages });
+      logger.info("fetchNotice completed", result);
+      res.status(200).json(result);
+    } catch (err) {
+      logger.error("fetchNotice failed", err);
       res.status(500).json({ error: (err as Error).message });
     }
   }
