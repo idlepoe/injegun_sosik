@@ -1,5 +1,6 @@
 /**
- * 공지사항 게시글 (articles 컬렉션, type: 'notice')
+ * 게시글 공통 타입 (articles 컬렉션)
+ * weekschedule과 notice를 통합한 Article 타입
  */
 
 export interface Attachment {
@@ -11,9 +12,9 @@ export interface Attachment {
   fileSeq?: string;
 }
 
-export interface Notice {
+export interface Article {
   /** 게시글 타입 */
-  type: "notice";
+  type: "weekschedule" | "notice";
   /** 상세 페이지 URL */
   url?: string;
   /** 글 번호 (상세 진입 키) */

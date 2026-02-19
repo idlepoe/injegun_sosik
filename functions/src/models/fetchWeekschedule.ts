@@ -12,7 +12,8 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import puppeteer, { type Browser, type Page } from "puppeteer";
 import * as XLSX from "xlsx";
-import type { WeekSchedule, WeekScheduleRow } from "../types/weekSchedule.js";
+import type { Article, Attachment } from "../types/article.js";
+import type { WeekScheduleRow } from "../types/weekSchedule.js";
 
 const BASE_URL = "https://www.inje.go.kr";
 const LIST_PATH = "/portal/inje-news/event/weekschedule";
@@ -152,15 +153,16 @@ async function fetchHtmlWithBrowser(browser: Browser, url: string): Promise<stri
 }
 
 /**
- * 상세 URL 방문 후 같은 페이지에서 xlsx 첨부 다운로드 (세션 유지로 ERR_ABORTED 방지)
+ * 상세 URL 방문 후 같은 페이지에서 첫 번째 xlsx 첨부 다운로드 (세션 유지로 ERR_ABORTED 방지)
  */
 async function fetchDetailAndAttachment(
   browser: Browser,
   detailUrl: string
-): Promise<{ html: string; buffer: Buffer | null }> {
+): Promise<{ html: string; buffer: Buffer | null; firstXlsxAttachment: Attachment | null }> {
   let page: Page | null = null;
   let html = "";
   let buffer: Buffer | null = null;
+  let firstXlsxAttachment: Attachment | null = null;
   try {
     page = await browser.newPage();
     await page.setViewport({ width: 1920, height: 1080 });
@@ -173,52 +175,70 @@ async function fetchDetailAndAttachment(
     const status1 = response1?.status();
     if (!response1 || !response1.ok()) {
       logger.warn("[fetchWeekschedule] Detail+attachment: detail fetch failed", { url: detailUrl, status: status1 });
-      return { html: "", buffer: null };
+      return { html: "", buffer: null, firstXlsxAttachment: null };
     }
     html = await page.content();
     logger.info("[fetchWeekschedule] Detail+attachment: detail fetched", { url: detailUrl, status: status1, length: html.length });
 
     const $ = cheerio.load(html);
-    const $attach = $("div.attachFile a[href*='download']").first();
-    const href = $attach.attr("href")?.trim();
-    const linkText = $attach.text().trim();
-    const isXlsx =
-      linkText.toLowerCase().endsWith(".xlsx") || (href?.includes("download") && href.includes("fileSeq"));
-    if (href && isXlsx) {
-      const downloadUrl = href.startsWith("http") ? href : BASE_URL + href;
-      logger.info("[fetchWeekschedule] Detail+attachment: same page download", { downloadUrl });
-      try {
-        // fetch()로 수신하면 리다이렉트(302)·ERR_ABORTED 없이 최종 응답 body 확보
-        const bytes = await page.evaluate(
-          async (url: string) => {
-            const res = await fetch(url, { credentials: "include" });
-            if (!res.ok) return { ok: false, status: res.status };
-            const ab = await res.arrayBuffer();
-            return { ok: true, data: Array.from(new Uint8Array(ab)) };
-          },
-          downloadUrl
-        );
-        if (bytes && bytes.ok && Array.isArray(bytes.data)) {
-          buffer = Buffer.from(bytes.data);
-          logger.info("[fetchWeekschedule] Detail+attachment: binary received", {
-            downloadUrl,
-            size: buffer.length,
-          });
-        } else {
-          logger.warn("[fetchWeekschedule] Detail+attachment: download not ok", {
-            downloadUrl,
-            status: bytes && "status" in bytes ? (bytes as { status: number }).status : undefined,
+    // 첫 번째 .xlsx 첨부파일 찾기
+    const attachmentElements = $("div.attachFile a[href*='download']").toArray();
+    for (const el of attachmentElements) {
+      const $attach = $(el);
+      const href = $attach.attr("href")?.trim();
+      const linkText = $attach.text().trim();
+      const attachmentName = linkText.replace(/\s+/g, " ").trim();
+      const isXlsx = attachmentName.toLowerCase().endsWith(".xlsx") || (href?.includes("download") && href.includes("fileSeq"));
+      
+      if (href && isXlsx) {
+        const fileSeqMatch = href.match(/fileSeq=(\d+)/);
+        firstXlsxAttachment = {
+          attachmentUrl: href,
+          attachmentName,
+          fileSeq: fileSeqMatch ? fileSeqMatch[1] : undefined,
+        };
+        
+        const downloadUrl = href.startsWith("http") ? href : BASE_URL + href;
+        logger.info("[fetchWeekschedule] Detail+attachment: same page download (first xlsx)", { downloadUrl, attachmentName });
+        if (!page) {
+          logger.warn("[fetchWeekschedule] Detail+attachment: page is null, cannot download");
+          break;
+        }
+        try {
+          // fetch()로 수신하면 리다이렉트(302)·ERR_ABORTED 없이 최종 응답 body 확보
+          const bytes = await page.evaluate(
+            async (url: string) => {
+              const res = await fetch(url, { credentials: "include" });
+              if (!res.ok) return { ok: false, status: res.status };
+              const ab = await res.arrayBuffer();
+              return { ok: true, data: Array.from(new Uint8Array(ab)) };
+            },
+            downloadUrl
+          );
+          if (bytes && bytes.ok && Array.isArray(bytes.data)) {
+            buffer = Buffer.from(bytes.data);
+            logger.info("[fetchWeekschedule] Detail+attachment: binary received", {
+              downloadUrl,
+              size: buffer.length,
+            });
+          } else {
+            logger.warn("[fetchWeekschedule] Detail+attachment: download not ok", {
+              downloadUrl,
+              status: bytes && "status" in bytes ? (bytes as { status: number }).status : undefined,
+            });
+          }
+        } catch (err) {
+          const e = err as Error;
+          logger.warn("[fetchWeekschedule] Detail+attachment: download error", {
+            downloadUrl: href.startsWith("http") ? href : BASE_URL + href,
+            message: e.message,
           });
         }
-      } catch (err) {
-        const e = err as Error;
-        logger.warn("[fetchWeekschedule] Detail+attachment: download error", {
-          downloadUrl: href.startsWith("http") ? href : BASE_URL + href,
-          message: e.message,
-        });
+        break; // 첫 번째 xlsx만 처리
       }
     }
-    return { html, buffer };
+    
+    return { html, buffer, firstXlsxAttachment };
   } finally {
     if (page) {
       try {
@@ -262,26 +282,38 @@ function parseListHtml(html: string): ListRow[] {
 }
 
 /**
- * 상세 HTML에서 WeekSchedule 추출
+ * 상세 HTML에서 Article 추출 (type: "weekschedule")
  */
-function parseDetailHtml(html: string, articleSeq: string, url: string): WeekSchedule | null {
+function parseDetailHtml(html: string, articleSeq: string, url: string): Article | null {
   const $ = cheerio.load(html);
   const title = $(".skinTb-sbj").first().text().trim();
   if (!title) return null;
 
   const author = $(".skinTb-name").first().text().trim();
   const registeredAt = $(".skinTb-date").first().text().trim();
-  const content = $(".skinTb-conts").first().text().trim();
+  // HTML 포함하여 추출
+  const content = $(".skinTb-conts").first().html()?.trim() || "";
 
-  const $attach = $("div.attachFile a[href*='download']").first();
-  const attachmentUrl = $attach.attr("href")?.trim();
-  const attachmentName = $attach.text().trim().replace(/\s+/g, " ").trim();
-  const fileSeqMatch = attachmentUrl?.match(/fileSeq=(\d+)/);
-  const fileSeq = fileSeqMatch ? fileSeqMatch[1] : undefined;
+  // 모든 첨부파일 추출
+  const attachments: Attachment[] = [];
+  $("div.attachFile a[href*='download']").each((_, el) => {
+    const $attach = $(el);
+    const attachmentUrl = $attach.attr("href")?.trim();
+    const attachmentName = $attach.text().trim().replace(/\s+/g, " ").trim();
+    const fileSeqMatch = attachmentUrl?.match(/fileSeq=(\d+)/);
+    if (attachmentUrl && attachmentName) {
+      attachments.push({
+        attachmentUrl,
+        attachmentName,
+        fileSeq: fileSeqMatch ? fileSeqMatch[1] : undefined,
+      });
+    }
+  });
 
   const boardCode = $("input[name='boardCode']").attr("value")?.trim();
 
   return {
+    type: "weekschedule",
     url,
     articleSeq,
     boardCode,
@@ -289,9 +321,7 @@ function parseDetailHtml(html: string, articleSeq: string, url: string): WeekSch
     author,
     registeredAt,
     content,
-    attachmentUrl,
-    attachmentName: attachmentName || undefined,
-    fileSeq,
+    attachments,
   };
 }
 
@@ -466,7 +496,7 @@ export async function fetchWeekschedule(options?: { maxListPages?: number }): Pr
           });
           continue;
         }
-        const { html: detailHtml, buffer: attachmentBuffer } = await fetchDetailAndAttachment(browser, detailUrl);
+        const { html: detailHtml, buffer: attachmentBuffer, firstXlsxAttachment } = await fetchDetailAndAttachment(browser, detailUrl);
         if (!detailHtml) {
           logger.warn("[fetchWeekschedule] Detail HTML empty, skip", {
             articleSeq: row.articleSeq,
@@ -492,20 +522,22 @@ export async function fetchWeekschedule(options?: { maxListPages?: number }): Pr
         logger.info("[fetchWeekschedule] Article saved", {
           articleSeq: row.articleSeq,
           title: article.title,
+          attachmentsCount: article.attachments.length,
           articlesCount,
         });
 
-        if (article.attachmentUrl && article.attachmentName?.toLowerCase().endsWith(".xlsx")) {
-          logger.info("[fetchWeekschedule] Attachment xlsx, using buffer from same-page download", {
+        // 첫 번째 첨부파일이 .xlsx인지 확인하고 파싱
+        if (firstXlsxAttachment && firstXlsxAttachment.attachmentName.toLowerCase().endsWith(".xlsx")) {
+          logger.info("[fetchWeekschedule] First attachment is xlsx, using buffer from same-page download", {
             articleSeq: row.articleSeq,
             title: article.title,
-            attachmentName: article.attachmentName,
+            attachmentName: firstXlsxAttachment.attachmentName,
           });
           if (!attachmentBuffer) {
             logger.warn("[fetchWeekschedule] Attachment download returned null (same page), skip", {
               articleSeq: row.articleSeq,
               title: article.title,
-              attachmentName: article.attachmentName,
+              attachmentName: firstXlsxAttachment.attachmentName,
             });
           } else {
             try {
@@ -541,18 +573,18 @@ export async function fetchWeekschedule(options?: { maxListPages?: number }): Pr
               logger.warn("[fetchWeekschedule] Excel parse failed, skip", {
                 articleSeq: row.articleSeq,
                 title: article.title,
-                attachmentName: article.attachmentName,
+                attachmentName: firstXlsxAttachment.attachmentName,
                 message: e.message,
                 stack: e.stack,
               });
             }
           }
         } else {
-          logger.info("[fetchWeekschedule] No xlsx attachment", {
+          logger.info("[fetchWeekschedule] No xlsx attachment (first attachment)", {
             articleSeq: row.articleSeq,
             title: article.title,
-            hasAttachment: !!article.attachmentUrl,
-            attachmentName: article.attachmentName,
+            attachmentsCount: article.attachments.length,
+            firstAttachmentName: article.attachments[0]?.attachmentName,
           });
         }
       }

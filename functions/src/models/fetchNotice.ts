@@ -11,7 +11,7 @@ import * as logger from "firebase-functions/logger";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import puppeteer, { type Browser, type Page } from "puppeteer";
-import type { Notice, Attachment } from "../types/notice.js";
+import type { Article, Attachment } from "../types/article.js";
 
 const BASE_URL = "https://www.inje.go.kr";
 const LIST_PATH = "/portal/adm/notice";
@@ -215,9 +215,9 @@ function parseListHtml(html: string): ListRow[] {
 }
 
 /**
- * 상세 HTML에서 Notice 추출
+ * 상세 HTML에서 Article 추출 (type: "notice")
  */
-function parseDetailHtml(html: string, articleSeq: string, url: string): Notice | null {
+function parseDetailHtml(html: string, articleSeq: string, url: string): Article | null {
   const $ = cheerio.load(html);
   const title = $(".skinTb-sbj").first().text().trim();
   if (!title) return null;
