@@ -1,22 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../bloc/weekschedule_list_bloc.dart';
+import '../models/weekschedule_row.dart';
 import '../repository/weekschedule_repository.dart';
 
-/// 행사소식: weekschedules 컬렉션 20개씩 리스트 (기본 위젯만)
-class WeekscheduleListScreen extends StatelessWidget {
+/// 행사소식: weekschedules 컬렉션을 TableCalendar + 리스트로 표시
+class WeekscheduleListScreen extends StatefulWidget {
   const WeekscheduleListScreen({super.key, required this.repository});
 
   final WeekscheduleRepository repository;
+
+  @override
+  State<WeekscheduleListScreen> createState() => _WeekscheduleListScreenState();
+}
+
+class _WeekscheduleListScreenState extends State<WeekscheduleListScreen> {
+  CalendarFormat _calendarFormat = CalendarFormat.month;
+  DateTime _focusedDay = DateTime.now();
+  DateTime _selectedDay = DateTime.now();
+
+  List<WeekScheduleRow> _getEventsForDay(
+    DateTime day,
+    List<WeekScheduleRow> items,
+  ) {
+    return items.where((row) {
+      final parsed = DateTime.tryParse(row.date);
+      if (parsed == null) return false;
+      return parsed.year == day.year &&
+          parsed.month == day.month &&
+          parsed.day == day.day;
+    }).toList();
+  }
+
+  Future<void> _openNaverMap(String place) async {
+    try {
+      final encodedPlace = Uri.encodeComponent(place);
+      final webUrl = Uri.parse(
+        'https://map.naver.com/p/search/$encodedPlace',
+      );
+      if (await canLaunchUrl(webUrl)) {
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint('Error opening Naver Map: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create:
           (_) =>
-              WeekscheduleListBloc(repository)
+              WeekscheduleListBloc(widget.repository)
                 ..add(WeekscheduleListLoadRequested()),
       child: Scaffold(
         appBar: AppBar(title: const Text('행사소식')),
@@ -30,141 +69,166 @@ class WeekscheduleListScreen extends StatelessWidget {
             }
             if (state is WeekscheduleListSuccess) {
               final items = state.items;
-              return RefreshIndicator(
-                onRefresh: () async {
-                  context
-                      .read<WeekscheduleListBloc>()
-                      .add(WeekscheduleListLoadRequested());
-                  // BLoC이 상태를 업데이트할 때까지 대기
-                  await context.read<WeekscheduleListBloc>().stream.firstWhere(
-                        (state) =>
-                            state is! WeekscheduleListLoading &&
-                            state is WeekscheduleListSuccess,
-                      );
-                },
-                child: items.isEmpty
-                    ? const SingleChildScrollView(
-                        physics: AlwaysScrollableScrollPhysics(),
-                        child: SizedBox(
-                          height: 400,
-                          child: Center(child: Text('목록이 없습니다.')),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: items.length,
-                        itemBuilder: (context, index) {
-                          final row = items[index];
-                          // date를 mm/dd 형식으로 변환
-                          String formattedDate = row.date;
-                          DateTime? dateTime;
-                          Color? dateColor;
-                          bool isToday = false;
 
-                          try {
-                            // 다양한 날짜 형식 시도
-                            if (row.date.contains('-')) {
-                              dateTime = DateTime.tryParse(row.date);
-                            } else if (row.date.contains('/')) {
-                              final parts = row.date.split('/');
-                              if (parts.length >= 2) {
-                                final year = int.tryParse(parts[0]);
-                                final month = int.tryParse(parts[1]);
-                                final day =
-                                    parts.length > 2 ? int.tryParse(parts[2]) : null;
-                                if (year != null && month != null && day != null) {
-                                  dateTime = DateTime(year, month, day);
-                                } else if (year != null && month != null) {
-                                  dateTime = DateTime(year, month, 1);
-                                }
-                              }
-                            }
-                            if (dateTime != null) {
-                              formattedDate = DateFormat('MM/dd').format(dateTime);
-                              // 오늘 날짜 확인
-                              final now = DateTime.now();
-                              isToday =
-                                  dateTime.year == now.year &&
-                                  dateTime.month == now.month &&
-                                  dateTime.day == now.day;
-                              // 요일 확인 (weekday: 1=월요일, 7=일요일)
-                              final weekday = dateTime.weekday;
-                              if (weekday == 6) {
-                                // 토요일 - 파란색
-                                dateColor = Colors.blue;
-                              } else if (weekday == 7) {
-                                // 일요일 - 빨간색
-                                dateColor = Colors.red;
-                              }
-                            }
-                          } catch (e) {
-                            // 파싱 실패 시 원본 사용
-                          }
+              // firstDay: 오늘 기준 3개월 전, lastDay: 마지막 이벤트로부터 1개월 뒤
+              final now = DateTime.now();
+              final firstDay = DateTime(now.year, now.month - 3, 1);
 
-                          return Container(
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+              DateTime? lastEventDate;
+              for (final row in items) {
+                final parsed = DateTime.tryParse(row.date);
+                if (parsed == null) continue;
+                if (lastEventDate == null || parsed.isAfter(lastEventDate)) {
+                  lastEventDate = parsed;
+                }
+              }
+              var lastDayBase = lastEventDate ?? now;
+              var lastDay = DateTime(
+                lastDayBase.year,
+                lastDayBase.month + 1,
+                lastDayBase.day,
+              );
+
+              if (lastDay.isBefore(firstDay)) {
+                lastDay = DateTime(
+                  firstDay.year,
+                  firstDay.month + 1,
+                  firstDay.day,
+                );
+              }
+
+              // TableCalendar 제약: focusedDay/selectedDay 는 범위 안이어야 함
+              var focusedDay = _focusedDay;
+              if (focusedDay.isBefore(firstDay) ||
+                  focusedDay.isAfter(lastDay)) {
+                focusedDay = firstDay;
+              }
+              var selectedDay = _selectedDay;
+              if (selectedDay.isBefore(firstDay) ||
+                  selectedDay.isAfter(lastDay)) {
+                selectedDay = focusedDay;
+              }
+
+              final selectedEvents = _getEventsForDay(selectedDay, items);
+
+              return Column(
+                children: [
+                  TableCalendar<WeekScheduleRow>(
+                    firstDay: firstDay,
+                    lastDay: lastDay,
+                    focusedDay: focusedDay,
+                    calendarFormat: _calendarFormat,
+                    daysOfWeekHeight: 30,
+                    locale: 'ko_KR',
+                    selectedDayPredicate: (day) => isSameDay(selectedDay, day),
+                    onDaySelected: (selectedDay, focusedDay) {
+                      setState(() {
+                        _selectedDay = selectedDay;
+                        _focusedDay = focusedDay;
+                      });
+                    },
+                    onFormatChanged: (format) {
+                      setState(() {
+                        _calendarFormat = format;
+                      });
+                    },
+                    onPageChanged: (focusedDay) {
+                      _focusedDay = focusedDay;
+                    },
+                    eventLoader: (day) => _getEventsForDay(day, items),
+                    headerStyle: const HeaderStyle(
+                      formatButtonVisible: false,
+                    ),
+                    calendarStyle: CalendarStyle(
+                      todayDecoration: BoxDecoration(
+                        border: Border.all(color: Colors.blue, width: 2.0),
+                        shape: BoxShape.rectangle,
+                        color: Colors.blue.withOpacity(0.8),
+                      ),
+                      selectedDecoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.blue.withOpacity(0.5),
+                      ),
+                      markerDecoration: const BoxDecoration(
+                        color: Colors.orange,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    calendarBuilders: CalendarBuilders(
+                      dowBuilder: (context, day) {
+                        final weekday = day.weekday;
+                        Color textColor;
+                        if (weekday == DateTime.saturday) {
+                          textColor = Colors.blue;
+                        } else if (weekday == DateTime.sunday) {
+                          textColor = Colors.red;
+                        } else {
+                          textColor = Colors.black;
+                        }
+                        return Center(
+                          child: Text(
+                            DateFormat.E('ko_KR').format(day),
+                            style: TextStyle(
+                              color: textColor,
+                              fontWeight: FontWeight.bold,
                             ),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: isToday ? Colors.blue : Colors.grey.shade300,
-                                width: isToday ? 3.0 : 1.0,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Stack(
-                              children: [
-                                ListTile(
-                                  leading: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        formattedDate,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodyMedium?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: dateColor,
-                                        ),
-                                      ),
-                                      Text(
-                                        row.time,
-                                        style: Theme.of(context).textTheme.bodySmall,
-                                      ),
-                                    ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child:
+                        selectedEvents.isEmpty
+                            ? const Center(child: Text('해당 날짜의 일정이 없습니다.'))
+                            : ListView.builder(
+                              itemCount: selectedEvents.length,
+                              itemBuilder: (context, index) {
+                                final row = selectedEvents[index];
+                                return Container(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
                                   ),
-                                  title: Text(row.eventContent),
-                                  subtitle: Text(row.place),
-                                ),
-                                if (isToday)
-                                  Positioned(
-                                    top: 0,
-                                    left: 0,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blue,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Text(
-                                        '오늘',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey.shade300),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: ListTile(
+                                    leading: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.access_time, size: 16),
+                                        const SizedBox(width: 4),
+                                        Text(row.time),
+                                      ],
+                                    ),
+                                    title: Text(row.eventContent),
+                                    subtitle: GestureDetector(
+                                      onTap: () => _openNaverMap(row.place),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.place, size: 16),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              row.place,
+                                              style: const TextStyle(
+                                                color: Colors.blue,
+                                                decoration: TextDecoration.underline,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
-                              ],
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
+                  ),
+                ],
               );
             }
             return const SizedBox.shrink();

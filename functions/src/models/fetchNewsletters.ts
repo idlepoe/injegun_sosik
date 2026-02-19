@@ -209,7 +209,7 @@ function parseNewsletterList(html: string): ParsedNewsletterItem[] {
   $("ul.boGallery.ebook > li").each((_, el) => {
     const $li = $(el);
     const title = $li.find(".boGallery-sbj").text().trim();
-    const thumbnailUrl = $li.find(".boGallery-img img").attr("src")?.trim();
+    const thumbnailUrlRaw = $li.find(".boGallery-img img").attr("src")?.trim();
     const thumbnailAlt = $li.find(".boGallery-img img").attr("alt")?.trim();
     const $pdfLink = $li.find('.boGallery-btnGroup a.boGallery-link[href*="/egf/bp/board/meta/download"]');
     const pdfHref = $pdfLink.attr("href")?.trim();
@@ -220,9 +220,14 @@ function parseNewsletterList(html: string): ParsedNewsletterItem[] {
     const metaMatch = pdfHref.match(/metaDataID=([^&]+)/);
     const pdfMetaDataID = metaMatch ? metaMatch[1] : undefined;
     const pdfDownloadUrl = pdfHref.startsWith("http") ? pdfHref : BASE_URL + pdfHref;
+    const thumbnailUrl = thumbnailUrlRaw
+      ? thumbnailUrlRaw.startsWith("http")
+        ? thumbnailUrlRaw
+        : BASE_URL + thumbnailUrlRaw
+      : undefined;
     items.push({
       title: title || `합강소식 ${pdfArticleSeq}`,
-      thumbnailUrl: thumbnailUrl || undefined,
+      thumbnailUrl,
       thumbnailAlt: thumbnailAlt || undefined,
       pdfDownloadUrl,
       pdfArticleSeq,

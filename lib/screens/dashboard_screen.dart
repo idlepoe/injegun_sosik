@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:swipeable_page_route/swipeable_page_route.dart';
 
 import '../repository/newsletter_repository.dart';
 import '../repository/weekschedule_repository.dart';
@@ -31,12 +32,12 @@ class DashboardScreen extends StatelessWidget {
               child: Text('인제군 소식', style: TextStyle(color: Colors.white, fontSize: 24)),
             ),
             ListTile(
-              title: const Text('행사소식 (weekschedule)'),
+              leading: const Icon(Icons.event_note),
+              title: const Text('행사소식 (주간일정)'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
+                Navigator.of(context).push(
+                  SwipeablePageRoute<void>(
                     builder: (_) => WeekscheduleListScreen(
                       repository: weekscheduleRepository,
                     ),
@@ -45,12 +46,12 @@ class DashboardScreen extends StatelessWidget {
               },
             ),
             ListTile(
-              title: const Text('합강소식지 (newsletters)'),
+              leading: const Icon(Icons.newspaper),
+              title: const Text('합강소식지'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
+                Navigator.of(context).push(
+                  SwipeablePageRoute<void>(
                     builder: (_) => NewsletterListScreen(
                       repository: newsletterRepository,
                     ),
