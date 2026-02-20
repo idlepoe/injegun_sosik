@@ -14,7 +14,7 @@ export interface Attachment {
 
 export interface Article {
   /** 게시글 타입 */
-  type: "weekschedule" | "notice";
+  type: "weekschedule" | "notice" | "job" | "livelihood" | "free";
   /** 상세 페이지 URL */
   url?: string;
   /** 글 번호 (상세 진입 키) */

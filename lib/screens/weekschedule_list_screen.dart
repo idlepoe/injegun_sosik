@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../bloc/weekschedule_list_bloc.dart';
 import '../models/weekschedule_row.dart';
 import '../repository/weekschedule_repository.dart';
+import '../utils/map_launcher.dart';
 
 /// 행사소식: weekschedules 컬렉션을 TableCalendar + 리스트로 표시
 class WeekscheduleListScreen extends StatefulWidget {
@@ -34,18 +35,6 @@ class _WeekscheduleListScreenState extends State<WeekscheduleListScreen> {
           parsed.month == day.month &&
           parsed.day == day.day;
     }).toList();
-  }
-
-  Future<void> _openNaverMap(String place) async {
-    try {
-      final encodedPlace = Uri.encodeComponent(place);
-      final webUrl = Uri.parse('https://map.naver.com/p/search/$encodedPlace');
-      if (await canLaunchUrl(webUrl)) {
-        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      debugPrint('Error opening Naver Map: $e');
-    }
   }
 
   Future<void> _openGoogleMaps({
@@ -191,12 +180,35 @@ class _WeekscheduleListScreenState extends State<WeekscheduleListScreen> {
                         shape: BoxShape.circle,
                         color: Colors.blue.withOpacity(0.5),
                       ),
-                      markerDecoration: const BoxDecoration(
-                        color: Colors.orange,
-                        shape: BoxShape.circle,
-                      ),
                     ),
                     calendarBuilders: CalendarBuilders(
+                      markerBuilder: (context, day, events) {
+                        if (events.isEmpty) return null;
+                        const markerColors = [
+                          Colors.blue,
+                          Colors.orange,
+                          Colors.green,
+                          Colors.purple,
+                          Colors.teal,
+                        ];
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            events.length > 5 ? 5 : events.length,
+                            (index) => Container(
+                              width: 6,
+                              height: 6,
+                              margin: const EdgeInsets.symmetric(horizontal: 1),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color:
+                                    markerColors[index % markerColors.length],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                       dowBuilder: (context, day) {
                         final weekday = day.weekday;
                         Color textColor;
@@ -249,7 +261,7 @@ class _WeekscheduleListScreenState extends State<WeekscheduleListScreen> {
                                   ),
                                   title: Text(row.eventContent),
                                   subtitle: GestureDetector(
-                                    onTap: () => _openNaverMap(row.place),
+                                    onTap: () => openNaverMap(row.place),
                                     child: Row(
                                       children: [
                                         const Icon(Icons.place, size: 16),

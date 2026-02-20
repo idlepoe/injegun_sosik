@@ -15,6 +15,9 @@ import { fetchNewsletters } from "./models/fetchNewsletters.js";
 import { fetchWeekschedule } from "./models/fetchWeekschedule.js";
 import { fetchWeather } from "./models/fetchWeather.js";
 import { fetchNotice } from "./models/fetchNotice.js";
+import { fetchJob } from "./models/fetchJob.js";
+import { fetchLivelihood } from "./models/fetchLivelihood.js";
+import { fetchFree } from "./models/fetchFree.js";
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -113,6 +116,75 @@ export const fetchNoticeFn = onRequest(
       res.status(200).json(result);
     } catch (err) {
       logger.error("fetchNotice failed", err);
+      res.status(500).json({ error: (err as Error).message });
+    }
+  }
+);
+
+/**
+ * 구인구직 크롤링: 목록/상세를 articles 컬렉션에 저장 (type: 'job')
+ * GET 호출. 쿼리: maxListPages (최대 목록 페이지 수, 기본 1)
+ */
+export const fetchJobFn = onRequest(
+  { maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
+  async (req, res) => {
+    if (req.method !== "GET") {
+      res.status(405).set("Allow", "GET").send("Method Not Allowed");
+      return;
+    }
+    const maxListPages = req.query.maxListPages ? Number(req.query.maxListPages) : 1;
+    try {
+      const result = await fetchJob({ maxListPages });
+      logger.info("fetchJob completed", result);
+      res.status(200).json(result);
+    } catch (err) {
+      logger.error("fetchJob failed", err);
+      res.status(500).json({ error: (err as Error).message });
+    }
+  }
+);
+
+/**
+ * 생활장터 크롤링: 목록/상세를 articles 컬렉션에 저장 (type: 'livelihood')
+ * GET 호출. 쿼리: maxListPages (최대 목록 페이지 수, 기본 1)
+ */
+export const fetchLivelihoodFn = onRequest(
+  { maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
+  async (req, res) => {
+    if (req.method !== "GET") {
+      res.status(405).set("Allow", "GET").send("Method Not Allowed");
+      return;
+    }
+    const maxListPages = req.query.maxListPages ? Number(req.query.maxListPages) : 1;
+    try {
+      const result = await fetchLivelihood({ maxListPages });
+      logger.info("fetchLivelihood completed", result);
+      res.status(200).json(result);
+    } catch (err) {
+      logger.error("fetchLivelihood failed", err);
+      res.status(500).json({ error: (err as Error).message });
+    }
+  }
+);
+
+/**
+ * 자유게시판 크롤링: 목록/상세를 articles 컬렉션에 저장 (type: 'free')
+ * GET 호출. 쿼리: maxListPages (최대 목록 페이지 수, 기본 1)
+ */
+export const fetchFreeFn = onRequest(
+  { maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
+  async (req, res) => {
+    if (req.method !== "GET") {
+      res.status(405).set("Allow", "GET").send("Method Not Allowed");
+      return;
+    }
+    const maxListPages = req.query.maxListPages ? Number(req.query.maxListPages) : 1;
+    try {
+      const result = await fetchFree({ maxListPages });
+      logger.info("fetchFree completed", result);
+      res.status(200).json(result);
+    } catch (err) {
+      logger.error("fetchFree failed", err);
       res.status(500).json({ error: (err as Error).message });
     }
   }

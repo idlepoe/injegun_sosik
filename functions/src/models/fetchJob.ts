@@ -16,7 +16,7 @@ import { absoluteUrlsInHtml } from "../utils/absoluteUrlsInHtml.js";
 import { truncateToMaxBytes } from "../utils/truncateBytes.js";
 
 const BASE_URL = "https://www.inje.go.kr";
-const LIST_PATH = "/portal/adm/notice";
+const LIST_PATH = "/portal/participation/job";
 const LIST_URL = BASE_URL + LIST_PATH;
 
 const USER_AGENT =
@@ -33,7 +33,7 @@ async function setupBrowser(): Promise<Browser> {
 
   if (process.env.PUPPETEER_EXECUTABLE_PATH) {
     executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-    logger.info("[fetchNotice] Using PUPPETEER_EXECUTABLE_PATH", { executablePath });
+    logger.info("[fetchJob] Using PUPPETEER_EXECUTABLE_PATH", { executablePath });
   } else {
     const defaultCacheDir = path.join(process.cwd(), ".cache", "puppeteer");
     const tmpCacheDir = "/tmp/.cache/puppeteer";
@@ -48,10 +48,10 @@ async function setupBrowser(): Promise<Browser> {
       const pptrPath = puppeteer.executablePath();
       if (pptrPath && fs.existsSync(pptrPath)) {
         executablePath = pptrPath;
-        logger.info("[fetchNotice] Using puppeteer.executablePath()", { executablePath });
+        logger.info("[fetchJob] Using puppeteer.executablePath()", { executablePath });
       }
     } catch (e) {
-      logger.info("[fetchNotice] puppeteer.executablePath() not available, will install Chrome", { err: String(e) });
+      logger.info("[fetchJob] puppeteer.executablePath() not available, will install Chrome", { err: String(e) });
     }
 
     if (!executablePath) {
@@ -84,11 +84,11 @@ async function setupBrowser(): Promise<Browser> {
           });
           if (resolved && fs.existsSync(resolved)) {
             executablePath = resolved;
-            logger.info("[fetchNotice] Using Chrome from @puppeteer/browsers", { executablePath, cacheDir });
+            logger.info("[fetchJob] Using Chrome from @puppeteer/browsers", { executablePath, cacheDir });
           }
         }
       } catch (err) {
-        logger.warn("[fetchNotice] Chrome install/setup failed", { err: String(err) });
+        logger.warn("[fetchJob] Chrome install/setup failed", { err: String(err) });
       }
     }
   }
@@ -115,7 +115,7 @@ async function setupBrowser(): Promise<Browser> {
     launchOptions.executablePath = executablePath;
   }
 
-  logger.info("[fetchNotice] Launching browser");
+  logger.info("[fetchJob] Launching browser");
   return await puppeteer.launch(launchOptions);
 }
 
@@ -128,18 +128,18 @@ async function fetchHtmlWithBrowser(browser: Browser, url: string): Promise<stri
     page = await browser.newPage();
     await page.setViewport({ width: 1920, height: 1080 });
     await page.setUserAgent(USER_AGENT);
-    logger.info("[fetchNotice] Fetching HTML", { url });
+    logger.info("[fetchJob] Fetching HTML", { url });
     const response = await page.goto(url, {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
     const status = response?.status();
     if (!response || !response.ok()) {
-      logger.warn("[fetchNotice] HTML fetch failed", { url, status });
+      logger.warn("[fetchJob] HTML fetch failed", { url, status });
       return "";
     }
     const html = await page.content();
-    logger.info("[fetchNotice] HTML fetched", { url, status, length: html.length });
+    logger.info("[fetchJob] HTML fetched", { url, status, length: html.length });
     return html;
   } finally {
     if (page) {
@@ -161,18 +161,18 @@ async function fetchDetailHtml(browser: Browser, detailUrl: string): Promise<str
     page = await browser.newPage();
     await page.setViewport({ width: 1920, height: 1080 });
     await page.setUserAgent(USER_AGENT);
-    logger.info("[fetchNotice] Fetching detail", { url: detailUrl });
+    logger.info("[fetchJob] Fetching detail", { url: detailUrl });
     const response = await page.goto(detailUrl, {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
     const status = response?.status();
     if (!response || !response.ok()) {
-      logger.warn("[fetchNotice] Detail fetch failed", { url: detailUrl, status });
+      logger.warn("[fetchJob] Detail fetch failed", { url: detailUrl, status });
       return "";
     }
     const html = await page.content();
-    logger.info("[fetchNotice] Detail fetched", { url: detailUrl, status, length: html.length });
+    logger.info("[fetchJob] Detail fetched", { url: detailUrl, status, length: html.length });
     return html;
   } finally {
     if (page) {
@@ -217,7 +217,7 @@ function parseListHtml(html: string): ListRow[] {
 }
 
 /**
- * 상세 HTML에서 Article 추출 (type: "notice")
+ * 상세 HTML에서 Article 추출 (type: "job")
  */
 function parseDetailHtml(html: string, articleSeq: string, url: string): Article | null {
   const $ = cheerio.load(html);
@@ -226,11 +226,9 @@ function parseDetailHtml(html: string, articleSeq: string, url: string): Article
 
   const author = $(".skinTb-name").first().text().trim();
   const registeredAt = $(".skinTb-date").first().text().trim();
-  // HTML 포함하여 추출 (상대 경로 → 절대 URL 변환 후 Firestore 필드 1MB 제한으로 잘림)
   const rawContent = $(".skinTb-conts").first().html()?.trim() || "";
   const content = truncateToMaxBytes(absoluteUrlsInHtml(rawContent, BASE_URL));
 
-  // 모든 첨부파일 추출
   const attachments: Attachment[] = [];
   $("div.attachFile a[href*='download']").each((_, el) => {
     const $attach = $(el);
@@ -250,7 +248,7 @@ function parseDetailHtml(html: string, articleSeq: string, url: string): Article
   const boardCode = $("input[name='boardCode']").attr("value")?.trim();
 
   return {
-    type: "notice",
+    type: "job",
     url,
     articleSeq,
     boardCode,
@@ -262,10 +260,6 @@ function parseDetailHtml(html: string, articleSeq: string, url: string): Article
   };
 }
 
-
-/**
- * Firestore는 undefined 값을 허용하지 않으므로 저장 전 제거
- */
 function removeUndefined<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const key of Object.keys(obj)) {
@@ -276,11 +270,9 @@ function removeUndefined<T extends Record<string, unknown>>(obj: T): Record<stri
 }
 
 /**
- * 공지사항 목록·상세 크롤링 후 articles 컬렉션에 저장 (type: 'notice')
- * Puppeteer 사용 (TLS/인증서 이슈 회피)
- * @param options.maxListPages 최대 목록 페이지 수 (기본 1)
+ * 구인구직 목록·상세 크롤링 후 articles 컬렉션에 저장 (type: 'job')
  */
-export async function fetchNotice(options?: { maxListPages?: number }): Promise<{
+export async function fetchJob(options?: { maxListPages?: number }): Promise<{
   articlesCount: number;
 }> {
   const maxListPages = options?.maxListPages ?? 1;
@@ -289,24 +281,24 @@ export async function fetchNotice(options?: { maxListPages?: number }): Promise<
 
   let articlesCount = 0;
 
-  logger.info("[fetchNotice] Start", { maxListPages });
+  logger.info("[fetchJob] Start", { maxListPages });
   const browser = await setupBrowser();
   try {
     for (let page = 1; page <= maxListPages; page++) {
       const listUrl = page === 1 ? LIST_URL : `${LIST_URL}?pageIndex=${page}`;
-      logger.info("[fetchNotice] List page", { page, listUrl });
+      logger.info("[fetchJob] List page", { page, listUrl });
       const listHtml = await fetchHtmlWithBrowser(browser, listUrl);
       if (!listHtml) throw new Error(`List fetch failed: ${listUrl}`);
       const listRows = parseListHtml(listHtml);
-      logger.info("[fetchNotice] List parsed", { page, count: listRows.length });
+      logger.info("[fetchJob] List parsed", { page, count: listRows.length });
       if (listRows.length === 0) break;
 
       for (const row of listRows) {
         const detailUrl = `${BASE_URL}${LIST_PATH}?articleSeq=${row.articleSeq}`;
-        logger.info("[fetchNotice] Article detail", { articleSeq: row.articleSeq, title: row.title });
+        logger.info("[fetchJob] Article detail", { articleSeq: row.articleSeq, title: row.title });
         const existingByUrl = await articlesRef.where("url", "==", detailUrl).limit(1).get();
         if (!existingByUrl.empty) {
-          logger.info("[fetchNotice] Duplicate by url, skip before detail fetch", {
+          logger.info("[fetchJob] Duplicate by url, skip before detail fetch", {
             articleSeq: row.articleSeq,
             title: row.title,
             url: detailUrl,
@@ -315,7 +307,7 @@ export async function fetchNotice(options?: { maxListPages?: number }): Promise<
         }
         const detailHtml = await fetchDetailHtml(browser, detailUrl);
         if (!detailHtml) {
-          logger.warn("[fetchNotice] Detail HTML empty, skip", {
+          logger.warn("[fetchJob] Detail HTML empty, skip", {
             articleSeq: row.articleSeq,
             title: row.title,
             url: detailUrl,
@@ -324,7 +316,7 @@ export async function fetchNotice(options?: { maxListPages?: number }): Promise<
         }
         const article = parseDetailHtml(detailHtml, row.articleSeq, detailUrl);
         if (!article) {
-          logger.warn("[fetchNotice] Detail parse failed, skip", {
+          logger.warn("[fetchJob] Detail parse failed, skip", {
             articleSeq: row.articleSeq,
             title: row.title,
             url: detailUrl,
@@ -336,7 +328,7 @@ export async function fetchNotice(options?: { maxListPages?: number }): Promise<
           .doc(row.articleSeq)
           .set(removeUndefined(article as unknown as Record<string, unknown>), { merge: true });
         articlesCount++;
-        logger.info("[fetchNotice] Article saved", {
+        logger.info("[fetchJob] Article saved", {
           articleSeq: row.articleSeq,
           title: article.title,
           attachmentsCount: article.attachments.length,
@@ -344,13 +336,13 @@ export async function fetchNotice(options?: { maxListPages?: number }): Promise<
         });
       }
     }
-    logger.info("[fetchNotice] Done", { articlesCount });
+    logger.info("[fetchJob] Done", { articlesCount });
   } finally {
     try {
       await browser.close();
-      logger.info("[fetchNotice] Browser closed");
+      logger.info("[fetchJob] Browser closed");
     } catch (e) {
-      logger.warn("[fetchNotice] Browser close error", { err: String(e) });
+      logger.warn("[fetchJob] Browser close error", { err: String(e) });
     }
   }
 

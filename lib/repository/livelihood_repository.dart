@@ -3,14 +3,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'article_repository.dart';
 import '../models/article.dart';
 
-/// Firestore articles 컬렉션 중 type=='notice' GET 전용 (페이징)
-class NoticeRepository implements ArticleRepository {
-  NoticeRepository({FirebaseFirestore? firestore})
+/// Firestore articles 컬렉션 중 type=='livelihood' GET 전용 (페이징)
+class LivelihoodRepository implements ArticleRepository {
+  LivelihoodRepository({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
-  /// articleSeq(문서 ID)로 단건 조회. 없으면 null.
+  @override
   Future<Article?> getByArticleSeq(String articleSeq) async {
     final doc = await _firestore.collection('articles').doc(articleSeq).get();
     if (!doc.exists || doc.data() == null) return null;
@@ -19,13 +19,13 @@ class NoticeRepository implements ArticleRepository {
 
   /// pageSize개 조회. startAfter 있으면 그 다음부터.
   /// 정렬: registeredAt 내림차순 (최신순)
-  Future<NoticePageResult> getPage({
+  Future<LivelihoodPageResult> getPage({
     int pageSize = 20,
     DocumentSnapshot<Map<String, dynamic>>? startAfter,
   }) async {
     var query = _firestore
         .collection('articles')
-        .where('type', isEqualTo: 'notice')
+        .where('type', isEqualTo: 'livelihood')
         .orderBy('registeredAt', descending: true)
         .limit(pageSize);
     if (startAfter != null) {
@@ -35,13 +35,13 @@ class NoticeRepository implements ArticleRepository {
     final docs = snapshot.docs;
     final items = docs.map((doc) => Article.fromFirestore(doc)).toList();
     final lastDoc = docs.isEmpty ? null : docs.last;
-    return NoticePageResult(items, lastDoc);
+    return LivelihoodPageResult(items, lastDoc);
   }
 }
 
 /// 한 페이지 조회 결과 (리스트 + 커서)
-class NoticePageResult {
-  NoticePageResult(this.items, this.lastDoc);
+class LivelihoodPageResult {
+  LivelihoodPageResult(this.items, this.lastDoc);
   final List<Article> items;
   final DocumentSnapshot<Map<String, dynamic>>? lastDoc;
 }

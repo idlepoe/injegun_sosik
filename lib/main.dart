@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'firebase_options.dart';
+import 'repository/free_repository.dart';
+import 'repository/job_repository.dart';
+import 'repository/livelihood_repository.dart';
 import 'repository/newsletter_repository.dart';
 import 'repository/notice_repository.dart';
 import 'repository/weekschedule_repository.dart';
@@ -38,13 +41,16 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: '인제군 소식',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
         useMaterial3: true,
       ),
       home: DashboardScreen(
         weekscheduleRepository: WeekscheduleRepository(),
         newsletterRepository: NewsletterRepository(),
         noticeRepository: NoticeRepository(),
+        freeRepository: FreeRepository(),
+        jobRepository: JobRepository(),
+        livelihoodRepository: LivelihoodRepository(),
         weatherRepository: WeatherRepository(),
       ),
     );
