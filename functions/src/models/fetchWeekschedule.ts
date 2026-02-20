@@ -13,6 +13,7 @@ import * as path from "node:path";
 import puppeteer, { type Browser, type Page } from "puppeteer";
 import * as XLSX from "xlsx";
 import type { Article, Attachment } from "../types/article.js";
+import { truncateToMaxBytes } from "../utils/truncateBytes.js";
 import type { WeekScheduleRow } from "../types/weekSchedule.js";
 
 const BASE_URL = "https://www.inje.go.kr";
@@ -23,6 +24,9 @@ const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 const CHROME_BUILD_ID = "131.0.6778.204";
+
+const GOOGLE_GEOCODING_API_KEY = "AIzaSyBATVuUvsXVsHBGy2N-eVwwD-bA7kjFAjc";
+const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 
 /**
  * Puppeteer 브라우저 설정 및 실행.
@@ -192,8 +196,9 @@ async function fetchDetailAndAttachment(
       
       if (href && isXlsx) {
         const fileSeqMatch = href.match(/fileSeq=(\d+)/);
+        const fullAttachmentUrl = href.startsWith("http") ? href : BASE_URL + href;
         firstXlsxAttachment = {
-          attachmentUrl: href,
+          attachmentUrl: fullAttachmentUrl,
           attachmentName,
           fileSeq: fileSeqMatch ? fileSeqMatch[1] : undefined,
         };
@@ -291,17 +296,19 @@ function parseDetailHtml(html: string, articleSeq: string, url: string): Article
 
   const author = $(".skinTb-name").first().text().trim();
   const registeredAt = $(".skinTb-date").first().text().trim();
-  // HTML 포함하여 추출
-  const content = $(".skinTb-conts").first().html()?.trim() || "";
+  // HTML 포함하여 추출 (Firestore 필드 1MB 제한으로 잘림)
+  const rawContent = $(".skinTb-conts").first().html()?.trim() || "";
+  const content = truncateToMaxBytes(rawContent);
 
   // 모든 첨부파일 추출
   const attachments: Attachment[] = [];
   $("div.attachFile a[href*='download']").each((_, el) => {
     const $attach = $(el);
-    const attachmentUrl = $attach.attr("href")?.trim();
+    const href = $attach.attr("href")?.trim();
     const attachmentName = $attach.text().trim().replace(/\s+/g, " ").trim();
-    const fileSeqMatch = attachmentUrl?.match(/fileSeq=(\d+)/);
-    if (attachmentUrl && attachmentName) {
+    const fileSeqMatch = href?.match(/fileSeq=(\d+)/);
+    if (href && attachmentName) {
+      const attachmentUrl = href.startsWith("http") ? href : BASE_URL + href;
       attachments.push({
         attachmentUrl,
         attachmentName,
@@ -366,10 +373,90 @@ function parseDateCell(value: string, year: number): string | null {
 }
 
 /**
+ * Google Geocoding API를 사용하여 장소명을 좌표로 변환
+ * 결과 주소에 '인제'가 포함된 경우에만 좌표 반환
+ */
+async function geocodePlace(place: string): Promise<{ lat: number; lng: number } | null> {
+  if (!place || !place.trim()) {
+    return null;
+  }
+
+  try {
+    const encodedPlace = encodeURIComponent(place.trim());
+    const url = `${GOOGLE_GEOCODING_API_URL}?address=${encodedPlace}&key=${GOOGLE_GEOCODING_API_KEY}&language=ko`;
+    
+    logger.info("[fetchWeekschedule] Geocoding request", { place, url: url.replace(GOOGLE_GEOCODING_API_KEY, "***") });
+
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      logger.warn("[fetchWeekschedule] Geocoding API request failed", {
+        place,
+        status: response.status,
+        statusText: response.statusText,
+      });
+      return null;
+    }
+
+    const data = await response.json() as {
+      status: string;
+      results?: Array<{
+        formatted_address: string;
+        geometry: {
+          location: {
+            lat: number;
+            lng: number;
+          };
+        };
+      }>;
+    };
+
+    if (data.status !== "OK" || !data.results || data.results.length === 0) {
+      logger.info("[fetchWeekschedule] Geocoding no results", { place, status: data.status });
+      return null;
+    }
+
+    const firstResult = data.results[0];
+    const formattedAddress = firstResult.formatted_address || "";
+    
+    // '인제'가 포함되어 있는지 확인 (대소문자 구분 없이)
+    if (!formattedAddress.toLowerCase().includes("인제")) {
+      logger.info("[fetchWeekschedule] Geocoding result does not contain '인제'", {
+        place,
+        formattedAddress,
+      });
+      return null;
+    }
+
+    const location = firstResult.geometry.location;
+    logger.info("[fetchWeekschedule] Geocoding success", {
+      place,
+      formattedAddress,
+      lat: location.lat,
+      lng: location.lng,
+    });
+
+    return {
+      lat: location.lat,
+      lng: location.lng,
+    };
+  } catch (err) {
+    const e = err as Error;
+    logger.warn("[fetchWeekschedule] Geocoding error", {
+      place,
+      message: e.message,
+      stack: e.stack,
+    });
+    return null;
+  }
+}
+
+/**
  * 엑셀 버퍼에서 4행부터 A~E열 추출 (일자→yyyy-mm-dd, 시간, 행사내용, 장소, 소관)
  * 연도는 2행 C열 "(2026. 2. 16. ~ ...)" 에서 추출. 일자 빈 칸은 직전 행 일자 유지.
+ * place에 대해 Google Geocoding을 수행하여 '인제'가 포함된 경우 lat/lng 저장.
  */
-function parseExcelRows(buffer: Buffer, articleSeq: string): WeekScheduleRow[] {
+async function parseExcelRows(buffer: Buffer, articleSeq: string): Promise<WeekScheduleRow[]> {
   let step = "start";
   try {
     logger.info("[fetchWeekschedule] Excel parse start", { articleSeq, bufferLength: buffer.length });
@@ -415,14 +502,34 @@ function parseExcelRows(buffer: Buffer, articleSeq: string): WeekScheduleRow[] {
       }
       const place = String(row[3] ?? "").trim();
       const department = String(row[4] ?? "").trim();
-      rows.push({
+      
+      // place에 대해 geocoding 수행
+      let lat: number | undefined;
+      let lng: number | undefined;
+      if (place) {
+        const geocodeResult = await geocodePlace(place);
+        if (geocodeResult) {
+          lat = geocodeResult.lat;
+          lng = geocodeResult.lng;
+        }
+      }
+      
+      const rowData: WeekScheduleRow = {
         date,
         time,
         eventContent,
         place,
         department,
         articleSeq,
-      });
+      };
+      
+      // lat, lng가 있는 경우에만 추가
+      if (lat !== undefined && lng !== undefined) {
+        rowData.lat = lat;
+        rowData.lng = lng;
+      }
+      
+      rows.push(rowData);
     }
     logger.info("[fetchWeekschedule] Excel parse done", {
       articleSeq,
@@ -546,7 +653,7 @@ export async function fetchWeekschedule(options?: { maxListPages?: number }): Pr
                 title: article.title,
                 bufferLength: attachmentBuffer.length,
               });
-              const scheduleRows = parseExcelRows(attachmentBuffer, row.articleSeq);
+              const scheduleRows = await parseExcelRows(attachmentBuffer, row.articleSeq);
               logger.info("[fetchWeekschedule] Excel parsed", {
                 articleSeq: row.articleSeq,
                 title: article.title,

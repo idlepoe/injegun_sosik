@@ -12,6 +12,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import puppeteer, { type Browser, type Page } from "puppeteer";
 import type { Article, Attachment } from "../types/article.js";
+import { truncateToMaxBytes } from "../utils/truncateBytes.js";
 
 const BASE_URL = "https://www.inje.go.kr";
 const LIST_PATH = "/portal/adm/notice";
@@ -224,17 +225,19 @@ function parseDetailHtml(html: string, articleSeq: string, url: string): Article
 
   const author = $(".skinTb-name").first().text().trim();
   const registeredAt = $(".skinTb-date").first().text().trim();
-  // HTML 포함하여 추출
-  const content = $(".skinTb-conts").first().html()?.trim() || "";
+  // HTML 포함하여 추출 (Firestore 필드 1MB 제한으로 잘림)
+  const rawContent = $(".skinTb-conts").first().html()?.trim() || "";
+  const content = truncateToMaxBytes(rawContent);
 
   // 모든 첨부파일 추출
   const attachments: Attachment[] = [];
   $("div.attachFile a[href*='download']").each((_, el) => {
     const $attach = $(el);
-    const attachmentUrl = $attach.attr("href")?.trim();
+    const href = $attach.attr("href")?.trim();
     const attachmentName = $attach.text().trim().replace(/\s+/g, " ").trim();
-    const fileSeqMatch = attachmentUrl?.match(/fileSeq=(\d+)/);
-    if (attachmentUrl && attachmentName) {
+    const fileSeqMatch = href?.match(/fileSeq=(\d+)/);
+    if (href && attachmentName) {
+      const attachmentUrl = href.startsWith("http") ? href : BASE_URL + href;
       attachments.push({
         attachmentUrl,
         attachmentName,

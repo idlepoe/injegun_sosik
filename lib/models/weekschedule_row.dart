@@ -12,7 +12,11 @@ abstract class WeekScheduleRow with _$WeekScheduleRow {
     required String eventContent,
     required String place,
     required String department,
-    required String articleSeq,
+    String? articleSeq,
+    /// 위도 (Google Geocoding 결과, '인제' 포함 시만 저장)
+    double? lat,
+    /// 경도 (Google Geocoding 결과, '인제' 포함 시만 저장)
+    double? lng,
   }) = _WeekScheduleRow;
 
   factory WeekScheduleRow.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -23,7 +27,9 @@ abstract class WeekScheduleRow with _$WeekScheduleRow {
       eventContent: (data['eventContent'] as String?) ?? '',
       place: (data['place'] as String?) ?? '',
       department: (data['department'] as String?) ?? '',
-      articleSeq: (data['articleSeq'] as String?) ?? '',
+      articleSeq: data['articleSeq'] as String?,
+      lat: data['lat'] != null ? (data['lat'] as num).toDouble() : null,
+      lng: data['lng'] != null ? (data['lng'] as num).toDouble() : null,
     );
   }
 }

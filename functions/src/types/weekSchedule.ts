@@ -16,4 +16,8 @@ export interface WeekScheduleRow {
   department: string;
   /** 출처 게시글 articleSeq */
   articleSeq: string;
+  /** 위도 (Google Geocoding 결과, '인제' 포함 시만 저장) */
+  lat?: number;
+  /** 경도 (Google Geocoding 결과, '인제' 포함 시만 저장) */
+  lng?: number;
 }

@@ -24,4 +24,15 @@ class WeekscheduleRepository {
     final snapshot = await query.get();
     return snapshot.docs.map(WeekScheduleRow.fromFirestore).toList();
   }
+
+  /// 이번 주 등 특정 날짜 구간의 행사만 조회. start, end는 "YYYY-MM-DD". 날짜 내림차순(desc) 반환.
+  Future<List<WeekScheduleRow>> getRowsInDateRange(String start, String end) async {
+    final snapshot = await _firestore
+        .collection('weekschedules')
+        .orderBy('date', descending: true)
+        .startAt([end]).endAt([start])
+        .limit(100)
+        .get();
+    return snapshot.docs.map(WeekScheduleRow.fromFirestore).toList();
+  }
 }

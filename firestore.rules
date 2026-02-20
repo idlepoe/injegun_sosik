@@ -17,6 +17,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+    // 공지사항(articles): 앱에서 목록/상세 조회만 (쓰기는 Cloud Functions에서만)
+    match /articles/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
     // 그 외 컬렉션: 기본 거부
     match /{document=**} {
       allow read, write: if false;

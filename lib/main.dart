@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'firebase_options.dart';
 import 'repository/newsletter_repository.dart';
+import 'repository/notice_repository.dart';
 import 'repository/weekschedule_repository.dart';
 import 'repository/weather_repository.dart';
 import 'screens/dashboard_screen.dart';
@@ -38,10 +39,12 @@ class MyApp extends StatelessWidget {
       title: '인제군 소식',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
       home: DashboardScreen(
         weekscheduleRepository: WeekscheduleRepository(),
         newsletterRepository: NewsletterRepository(),
+        noticeRepository: NoticeRepository(),
         weatherRepository: WeatherRepository(),
       ),
     );

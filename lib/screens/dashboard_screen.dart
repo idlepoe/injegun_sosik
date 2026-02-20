@@ -1,12 +1,20 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:swipeable_page_route/swipeable_page_route.dart';
 
+import '../models/article.dart';
+import '../models/newsletter.dart';
 import '../models/weather.dart';
+import '../models/weekschedule_row.dart';
 import '../repository/newsletter_repository.dart';
+import '../repository/notice_repository.dart';
 import '../repository/weekschedule_repository.dart';
 import '../repository/weather_repository.dart';
+import 'article_detail_screen.dart';
 import 'newsletter_list_screen.dart';
+import 'notice_list_screen.dart';
+import 'pdf_viewer_screen.dart';
 import 'weekschedule_list_screen.dart';
 
 /// 대시보드: 빈 화면 + Drawer 메뉴 (행사소식 / 합강소식지)
@@ -15,11 +23,13 @@ class DashboardScreen extends StatefulWidget {
     super.key,
     required this.weekscheduleRepository,
     required this.newsletterRepository,
+    required this.noticeRepository,
     required this.weatherRepository,
   });
 
   final WeekscheduleRepository weekscheduleRepository;
   final NewsletterRepository newsletterRepository;
+  final NoticeRepository noticeRepository;
   final WeatherRepository weatherRepository;
 
   @override
@@ -30,10 +40,64 @@ class _DashboardScreenState extends State<DashboardScreen> {
   WeatherData? _weatherData;
   bool _isLoadingWeather = true;
 
+  List<WeekScheduleRow>? _thisWeekEvents;
+  List<Article>? _recentNotices;
+  Newsletter? _latestNewsletter;
+  bool _isLoadingDashboard = true;
+
+  static final _dateOnlyFormat = DateFormat('yyyy-MM-dd');
+
+  /// 이번 주 월요일 00:00, 일요일 23:59의 날짜 문자열 "YYYY-MM-DD"
+  static (String start, String end) thisWeekRange() {
+    final now = DateTime.now();
+    final monday = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+    final sunday = monday.add(const Duration(days: 6));
+    return (_dateOnlyFormat.format(monday), _dateOnlyFormat.format(sunday));
+  }
+
+  /// 오늘 기준 7일 전 "YYYY-MM-DD"
+  static String sevenDaysAgo() {
+    final d = DateTime.now().subtract(const Duration(days: 7));
+    return _dateOnlyFormat.format(d);
+  }
+
   @override
   void initState() {
     super.initState();
     _loadWeather();
+    _loadDashboard();
+  }
+
+  /// 날씨 + 행사/공지/소식지 전체 새로고침 (RefreshIndicator용)
+  Future<void> _refreshAll() async {
+    await Future.wait([_loadWeather(), _loadDashboard()]);
+  }
+
+  Future<void> _loadDashboard() async {
+    final (weekStart, weekEnd) = thisWeekRange();
+    final sinceStr = sevenDaysAgo();
+    List<WeekScheduleRow>? events;
+    List<Article>? notices;
+    Newsletter? newsletter;
+    try {
+      events = await widget.weekscheduleRepository.getRowsInDateRange(weekStart, weekEnd);
+    } catch (_) {}
+    try {
+      final result = await widget.noticeRepository.getPage(pageSize: 50);
+      notices = result.items.where((a) => a.registeredAt.compareTo(sinceStr) >= 0).toList();
+    } catch (_) {}
+    try {
+      final list = await widget.newsletterRepository.getPage(pageSize: 1);
+      newsletter = list.isNotEmpty ? list.first : null;
+    } catch (_) {}
+    if (mounted) {
+      setState(() {
+        _thisWeekEvents = events ?? [];
+        _recentNotices = notices ?? [];
+        _latestNewsletter = newsletter;
+        _isLoadingDashboard = false;
+      });
+    }
   }
 
   Future<void> _loadWeather() async {
@@ -118,6 +182,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.campaign),
+              title: const Text('공지사항'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  SwipeablePageRoute<void>(
+                    builder: (_) => NoticeListScreen(
+                      repository: widget.noticeRepository,
+                    ),
+                  ),
+                );
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.newspaper),
               title: const Text('합강소식지'),
               onTap: () {
@@ -134,62 +212,301 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          // 날씨 정보 Container
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16.0),
-            margin: const EdgeInsets.all(8.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: _isLoadingWeather
-                ? const Center(child: CircularProgressIndicator())
-                : _weatherData == null
-                ? const Text('날씨 정보를 불러올 수 없습니다.')
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '📍 인제군 | 오늘 $dateStr',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _refreshAll,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 24),
+            children: [
+              // 날씨 정보 Container
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16.0),
+                margin: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: _isLoadingWeather
+                    ? const Center(child: CircularProgressIndicator())
+                    : _weatherData == null
+                        ? const Text('날씨 정보를 불러올 수 없습니다.')
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '📍 인제군 | 오늘 $dateStr',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Image.asset(
+                                    _getWeatherIconPath(_weatherData!.weatherIcon),
+                                    width: 24,
+                                    height: 24,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Icon(Icons.wb_sunny, size: 24);
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${_weatherData!.temp.round()}℃',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '| ${_weatherData!.weatherDescription}',
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+              ),
+              // 날씨 아래: 행사/공지/소식지
+              ..._buildSectionChildren(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 행사/공지/소식지 섹션 위젯 목록 (ListView children용)
+  List<Widget> _buildSectionChildren() {
+    if (_isLoadingDashboard) {
+      return [
+        const SizedBox(
+          height: 120,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ];
+    }
+    final sections = <Widget>[];
+    final hasEvents = _thisWeekEvents != null && _thisWeekEvents!.isNotEmpty;
+    final hasNotices = _recentNotices != null && _recentNotices!.isNotEmpty;
+    final hasNewsletter = _latestNewsletter != null;
+    if (!hasEvents && !hasNotices && !hasNewsletter) {
+      return [
+        const SizedBox(
+          height: 120,
+          child: Center(child: Text('대시보드')),
+        ),
+      ];
+    }
+    const padding = EdgeInsets.symmetric(horizontal: 16, vertical: 8);
+    if (hasEvents) {
+      sections.add(_sectionHeader('이번 주 행사 ${_thisWeekEvents!.length}건'));
+      for (final row in _thisWeekEvents!) {
+        sections.add(_eventTile(row, padding));
+      }
+    }
+    if (hasNotices) {
+      sections.add(_sectionHeader('새 공지 ${_recentNotices!.length}건'));
+      for (final article in _recentNotices!) {
+        sections.add(_noticeTile(article, padding));
+      }
+    }
+    if (hasNewsletter) {
+      sections.add(_sectionHeader('합강소식지 ${_latestNewsletter!.title}'));
+      sections.add(_newsletterTile(_latestNewsletter!, padding));
+    }
+    return sections;
+  }
+
+  Widget _sectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, top: 16, right: 16, bottom: 4),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  /// row.date(YYYY-MM-DD) 기준 오늘과의 차이: "N일 남음", "오늘", "N일 지남"
+  String _relativeDayLabel(String dateStr) {
+    final d = DateTime.tryParse(dateStr);
+    if (d == null) return '';
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final eventDate = DateTime(d.year, d.month, d.day);
+    final diff = eventDate.difference(today).inDays;
+    if (diff > 0) return '$diff일 남음';
+    if (diff == 0) return '오늘';
+    return '${-diff}일 지남';
+  }
+
+  Widget _eventTile(WeekScheduleRow row, EdgeInsets padding) {
+    final label = _relativeDayLabel(row.date);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: ListTile(
+          contentPadding: padding,
+          leading: label.isEmpty
+              ? null
+              : SizedBox(
+                  width: 56,
+                  child: Center(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+          title: Text(row.eventContent),
+          subtitle: Text('${row.date} ${row.time} · ${row.place}'),
+          onTap: () {
+            Navigator.of(context).push(
+              SwipeablePageRoute<void>(
+                builder: (_) => WeekscheduleListScreen(
+                  repository: widget.weekscheduleRepository,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _noticeTile(Article article, EdgeInsets padding) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: ListTile(
+          contentPadding: padding,
+          title: Text(
+            article.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(article.registeredAt),
+          onTap: () {
+            Navigator.of(context).push(
+              SwipeablePageRoute<void>(
+                builder: (_) => ArticleDetailScreen(
+                  articleSeq: article.articleSeq,
+                  repository: widget.noticeRepository,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _newsletterTile(Newsletter newsletter, EdgeInsets padding) {
+    final hasPdf = newsletter.pdfStorageUrl != null && newsletter.pdfStorageUrl!.isNotEmpty;
+    return Padding(
+      padding: padding,
+      child: Container(
+        height: 140,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: hasPdf
+                ? () {
+                    Navigator.of(context).push(
+                      SwipeablePageRoute<void>(
+                        builder: (_) => PdfViewerScreen(
+                          pdfUrl: newsletter.pdfStorageUrl!,
+                          title: newsletter.title,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Image.asset(
-                            _getWeatherIconPath(_weatherData!.weatherIcon),
-                            width: 24,
-                            height: 24,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(Icons.wb_sunny, size: 24);
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${_weatherData!.temp.round()}℃',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '| ${_weatherData!.weatherDescription}',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ],
+                    );
+                  }
+                : () {
+                    Navigator.of(context).push(
+                      SwipeablePageRoute<void>(
+                        builder: (_) => NewsletterListScreen(
+                          repository: widget.newsletterRepository,
+                        ),
                       ),
-                    ],
+                    );
+                  },
+            borderRadius: BorderRadius.circular(4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: 100,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.horizontal(left: Radius.circular(4)),
+                    child: newsletter.thumbnailUrl != null
+                        ? CachedNetworkImage(
+                            imageUrl: newsletter.thumbnailUrl!,
+                            httpHeaders: const {
+                              'User-Agent':
+                                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                            },
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => const Center(
+                                child: SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(strokeWidth: 2))),
+                            errorWidget: (context, url, error) => const Center(
+                              child: Icon(Icons.image_not_supported, size: 40),
+                            ),
+                          )
+                        : const Center(
+                            child: Icon(Icons.picture_as_pdf, size: 48),
+                          ),
                   ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        newsletter.title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const Expanded(child: Center(child: Text('대시보드'))),
-        ],
+        ),
       ),
     );
   }

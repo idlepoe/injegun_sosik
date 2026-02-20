@@ -39,9 +39,7 @@ class _WeekscheduleListScreenState extends State<WeekscheduleListScreen> {
   Future<void> _openNaverMap(String place) async {
     try {
       final encodedPlace = Uri.encodeComponent(place);
-      final webUrl = Uri.parse(
-        'https://map.naver.com/p/search/$encodedPlace',
-      );
+      final webUrl = Uri.parse('https://map.naver.com/p/search/$encodedPlace');
       if (await canLaunchUrl(webUrl)) {
         await launchUrl(webUrl, mode: LaunchMode.externalApplication);
       }
@@ -50,15 +48,61 @@ class _WeekscheduleListScreenState extends State<WeekscheduleListScreen> {
     }
   }
 
+  Future<void> _openGoogleMaps({
+    required String locationName,
+    double? latitude,
+    double? longitude,
+    String? googleMapsUrl,
+  }) async {
+    try {
+      // googleMapsUrl이 있으면 우선 사용
+      if (googleMapsUrl?.isNotEmpty == true) {
+        final uri = Uri.parse(googleMapsUrl!);
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      }
+
+      // 좌표가 있으면 좌표로 열기
+      if (latitude != null && longitude != null) {
+        final url = Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
+        );
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+        return;
+      }
+
+      // 없으면 장소명으로 검색
+      final query = Uri.encodeComponent(locationName);
+      final url = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$query',
+      );
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint('Error opening Google Maps: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create:
-          (_) =>
-              WeekscheduleListBloc(widget.repository)
-                ..add(WeekscheduleListLoadRequested()),
+      create: (_) =>
+          WeekscheduleListBloc(widget.repository)
+            ..add(WeekscheduleListLoadRequested()),
       child: Scaffold(
-        appBar: AppBar(title: const Text('행사소식')),
+        appBar: AppBar(
+          title: const Text('행사소식'),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                final uri = Uri.parse(
+                  'https://www.inje.go.kr/portal/inje-news/event/weekschedule',
+                );
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              },
+              child: const Text('원본보기'),
+            ),
+          ],
+        ),
         body: BlocBuilder<WeekscheduleListBloc, WeekscheduleListState>(
           builder: (context, state) {
             if (state is WeekscheduleListLoading) {
@@ -136,9 +180,7 @@ class _WeekscheduleListScreenState extends State<WeekscheduleListScreen> {
                       _focusedDay = focusedDay;
                     },
                     eventLoader: (day) => _getEventsForDay(day, items),
-                    headerStyle: const HeaderStyle(
-                      formatButtonVisible: false,
-                    ),
+                    headerStyle: const HeaderStyle(formatButtonVisible: false),
                     calendarStyle: CalendarStyle(
                       todayDecoration: BoxDecoration(
                         border: Border.all(color: Colors.blue, width: 2.0),
@@ -179,54 +221,56 @@ class _WeekscheduleListScreenState extends State<WeekscheduleListScreen> {
                   ),
                   const Divider(height: 1),
                   Expanded(
-                    child:
-                        selectedEvents.isEmpty
-                            ? const Center(child: Text('해당 날짜의 일정이 없습니다.'))
-                            : ListView.builder(
-                              itemCount: selectedEvents.length,
-                              itemBuilder: (context, index) {
-                                final row = selectedEvents[index];
-                                return Container(
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
+                    child: selectedEvents.isEmpty
+                        ? const Center(child: Text('해당 날짜의 일정이 없습니다.'))
+                        : ListView.builder(
+                            itemCount: selectedEvents.length,
+                            itemBuilder: (context, index) {
+                              final row = selectedEvents[index];
+                              return Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
                                   ),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey.shade300),
-                                    borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: ListTile(
+                                  leading: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.access_time, size: 16),
+                                      const SizedBox(width: 4),
+                                      Text(row.time),
+                                    ],
                                   ),
-                                  child: ListTile(
-                                    leading: Row(
-                                      mainAxisSize: MainAxisSize.min,
+                                  title: Text(row.eventContent),
+                                  subtitle: GestureDetector(
+                                    onTap: () => _openNaverMap(row.place),
+                                    child: Row(
                                       children: [
-                                        const Icon(Icons.access_time, size: 16),
+                                        const Icon(Icons.place, size: 16),
                                         const SizedBox(width: 4),
-                                        Text(row.time),
-                                      ],
-                                    ),
-                                    title: Text(row.eventContent),
-                                    subtitle: GestureDetector(
-                                      onTap: () => _openNaverMap(row.place),
-                                      child: Row(
-                                        children: [
-                                          const Icon(Icons.place, size: 16),
-                                          const SizedBox(width: 4),
-                                          Expanded(
-                                            child: Text(
-                                              row.place,
-                                              style: const TextStyle(
-                                                color: Colors.blue,
-                                                decoration: TextDecoration.underline,
-                                              ),
+                                        Expanded(
+                                          child: Text(
+                                            row.place,
+                                            style: const TextStyle(
+                                              color: Colors.blue,
+                                              decoration:
+                                                  TextDecoration.underline,
                                             ),
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                );
-                              },
-                            ),
+                                ),
+                              );
+                            },
+                          ),
                   ),
                 ],
               );

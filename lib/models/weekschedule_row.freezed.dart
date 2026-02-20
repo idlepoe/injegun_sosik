@@ -14,7 +14,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$WeekScheduleRow {
 
- String get date; String get time; String get eventContent; String get place; String get department; String get articleSeq;
+ String get date; String get time; String get eventContent; String get place; String get department; String? get articleSeq;/// 위도 (Google Geocoding 결과, '인제' 포함 시만 저장)
+ double? get lat;/// 경도 (Google Geocoding 결과, '인제' 포함 시만 저장)
+ double? get lng;
 /// Create a copy of WeekScheduleRow
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +27,16 @@ $WeekScheduleRowCopyWith<WeekScheduleRow> get copyWith => _$WeekScheduleRowCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WeekScheduleRow&&(identical(other.date, date) || other.date == date)&&(identical(other.time, time) || other.time == time)&&(identical(other.eventContent, eventContent) || other.eventContent == eventContent)&&(identical(other.place, place) || other.place == place)&&(identical(other.department, department) || other.department == department)&&(identical(other.articleSeq, articleSeq) || other.articleSeq == articleSeq));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WeekScheduleRow&&(identical(other.date, date) || other.date == date)&&(identical(other.time, time) || other.time == time)&&(identical(other.eventContent, eventContent) || other.eventContent == eventContent)&&(identical(other.place, place) || other.place == place)&&(identical(other.department, department) || other.department == department)&&(identical(other.articleSeq, articleSeq) || other.articleSeq == articleSeq)&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,date,time,eventContent,place,department,articleSeq);
+int get hashCode => Object.hash(runtimeType,date,time,eventContent,place,department,articleSeq,lat,lng);
 
 @override
 String toString() {
-  return 'WeekScheduleRow(date: $date, time: $time, eventContent: $eventContent, place: $place, department: $department, articleSeq: $articleSeq)';
+  return 'WeekScheduleRow(date: $date, time: $time, eventContent: $eventContent, place: $place, department: $department, articleSeq: $articleSeq, lat: $lat, lng: $lng)';
 }
 
 
@@ -45,7 +47,7 @@ abstract mixin class $WeekScheduleRowCopyWith<$Res>  {
   factory $WeekScheduleRowCopyWith(WeekScheduleRow value, $Res Function(WeekScheduleRow) _then) = _$WeekScheduleRowCopyWithImpl;
 @useResult
 $Res call({
- String date, String time, String eventContent, String place, String department, String articleSeq
+ String date, String time, String eventContent, String place, String department, String? articleSeq, double? lat, double? lng
 });
 
 
@@ -62,15 +64,17 @@ class _$WeekScheduleRowCopyWithImpl<$Res>
 
 /// Create a copy of WeekScheduleRow
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? date = null,Object? time = null,Object? eventContent = null,Object? place = null,Object? department = null,Object? articleSeq = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? date = null,Object? time = null,Object? eventContent = null,Object? place = null,Object? department = null,Object? articleSeq = freezed,Object? lat = freezed,Object? lng = freezed,}) {
   return _then(_self.copyWith(
 date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as String,time: null == time ? _self.time : time // ignore: cast_nullable_to_non_nullable
 as String,eventContent: null == eventContent ? _self.eventContent : eventContent // ignore: cast_nullable_to_non_nullable
 as String,place: null == place ? _self.place : place // ignore: cast_nullable_to_non_nullable
 as String,department: null == department ? _self.department : department // ignore: cast_nullable_to_non_nullable
-as String,articleSeq: null == articleSeq ? _self.articleSeq : articleSeq // ignore: cast_nullable_to_non_nullable
-as String,
+as String,articleSeq: freezed == articleSeq ? _self.articleSeq : articleSeq // ignore: cast_nullable_to_non_nullable
+as String?,lat: freezed == lat ? _self.lat : lat // ignore: cast_nullable_to_non_nullable
+as double?,lng: freezed == lng ? _self.lng : lng // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 
@@ -155,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String date,  String time,  String eventContent,  String place,  String department,  String articleSeq)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String date,  String time,  String eventContent,  String place,  String department,  String? articleSeq,  double? lat,  double? lng)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _WeekScheduleRow() when $default != null:
-return $default(_that.date,_that.time,_that.eventContent,_that.place,_that.department,_that.articleSeq);case _:
+return $default(_that.date,_that.time,_that.eventContent,_that.place,_that.department,_that.articleSeq,_that.lat,_that.lng);case _:
   return orElse();
 
 }
@@ -176,10 +180,10 @@ return $default(_that.date,_that.time,_that.eventContent,_that.place,_that.depar
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String date,  String time,  String eventContent,  String place,  String department,  String articleSeq)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String date,  String time,  String eventContent,  String place,  String department,  String? articleSeq,  double? lat,  double? lng)  $default,) {final _that = this;
 switch (_that) {
 case _WeekScheduleRow():
-return $default(_that.date,_that.time,_that.eventContent,_that.place,_that.department,_that.articleSeq);case _:
+return $default(_that.date,_that.time,_that.eventContent,_that.place,_that.department,_that.articleSeq,_that.lat,_that.lng);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -196,10 +200,10 @@ return $default(_that.date,_that.time,_that.eventContent,_that.place,_that.depar
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String date,  String time,  String eventContent,  String place,  String department,  String articleSeq)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String date,  String time,  String eventContent,  String place,  String department,  String? articleSeq,  double? lat,  double? lng)?  $default,) {final _that = this;
 switch (_that) {
 case _WeekScheduleRow() when $default != null:
-return $default(_that.date,_that.time,_that.eventContent,_that.place,_that.department,_that.articleSeq);case _:
+return $default(_that.date,_that.time,_that.eventContent,_that.place,_that.department,_that.articleSeq,_that.lat,_that.lng);case _:
   return null;
 
 }
@@ -211,7 +215,7 @@ return $default(_that.date,_that.time,_that.eventContent,_that.place,_that.depar
 
 
 class _WeekScheduleRow implements WeekScheduleRow {
-  const _WeekScheduleRow({required this.date, required this.time, required this.eventContent, required this.place, required this.department, required this.articleSeq});
+  const _WeekScheduleRow({required this.date, required this.time, required this.eventContent, required this.place, required this.department, this.articleSeq, this.lat, this.lng});
   
 
 @override final  String date;
@@ -219,7 +223,11 @@ class _WeekScheduleRow implements WeekScheduleRow {
 @override final  String eventContent;
 @override final  String place;
 @override final  String department;
-@override final  String articleSeq;
+@override final  String? articleSeq;
+/// 위도 (Google Geocoding 결과, '인제' 포함 시만 저장)
+@override final  double? lat;
+/// 경도 (Google Geocoding 결과, '인제' 포함 시만 저장)
+@override final  double? lng;
 
 /// Create a copy of WeekScheduleRow
 /// with the given fields replaced by the non-null parameter values.
@@ -231,16 +239,16 @@ _$WeekScheduleRowCopyWith<_WeekScheduleRow> get copyWith => __$WeekScheduleRowCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WeekScheduleRow&&(identical(other.date, date) || other.date == date)&&(identical(other.time, time) || other.time == time)&&(identical(other.eventContent, eventContent) || other.eventContent == eventContent)&&(identical(other.place, place) || other.place == place)&&(identical(other.department, department) || other.department == department)&&(identical(other.articleSeq, articleSeq) || other.articleSeq == articleSeq));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WeekScheduleRow&&(identical(other.date, date) || other.date == date)&&(identical(other.time, time) || other.time == time)&&(identical(other.eventContent, eventContent) || other.eventContent == eventContent)&&(identical(other.place, place) || other.place == place)&&(identical(other.department, department) || other.department == department)&&(identical(other.articleSeq, articleSeq) || other.articleSeq == articleSeq)&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,date,time,eventContent,place,department,articleSeq);
+int get hashCode => Object.hash(runtimeType,date,time,eventContent,place,department,articleSeq,lat,lng);
 
 @override
 String toString() {
-  return 'WeekScheduleRow(date: $date, time: $time, eventContent: $eventContent, place: $place, department: $department, articleSeq: $articleSeq)';
+  return 'WeekScheduleRow(date: $date, time: $time, eventContent: $eventContent, place: $place, department: $department, articleSeq: $articleSeq, lat: $lat, lng: $lng)';
 }
 
 
@@ -251,7 +259,7 @@ abstract mixin class _$WeekScheduleRowCopyWith<$Res> implements $WeekScheduleRow
   factory _$WeekScheduleRowCopyWith(_WeekScheduleRow value, $Res Function(_WeekScheduleRow) _then) = __$WeekScheduleRowCopyWithImpl;
 @override @useResult
 $Res call({
- String date, String time, String eventContent, String place, String department, String articleSeq
+ String date, String time, String eventContent, String place, String department, String? articleSeq, double? lat, double? lng
 });
 
 
@@ -268,15 +276,17 @@ class __$WeekScheduleRowCopyWithImpl<$Res>
 
 /// Create a copy of WeekScheduleRow
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? date = null,Object? time = null,Object? eventContent = null,Object? place = null,Object? department = null,Object? articleSeq = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? date = null,Object? time = null,Object? eventContent = null,Object? place = null,Object? department = null,Object? articleSeq = freezed,Object? lat = freezed,Object? lng = freezed,}) {
   return _then(_WeekScheduleRow(
 date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as String,time: null == time ? _self.time : time // ignore: cast_nullable_to_non_nullable
 as String,eventContent: null == eventContent ? _self.eventContent : eventContent // ignore: cast_nullable_to_non_nullable
 as String,place: null == place ? _self.place : place // ignore: cast_nullable_to_non_nullable
 as String,department: null == department ? _self.department : department // ignore: cast_nullable_to_non_nullable
-as String,articleSeq: null == articleSeq ? _self.articleSeq : articleSeq // ignore: cast_nullable_to_non_nullable
-as String,
+as String,articleSeq: freezed == articleSeq ? _self.articleSeq : articleSeq // ignore: cast_nullable_to_non_nullable
+as String?,lat: freezed == lat ? _self.lat : lat // ignore: cast_nullable_to_non_nullable
+as double?,lng: freezed == lng ? _self.lng : lng // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 
