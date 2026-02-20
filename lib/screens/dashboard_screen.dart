@@ -350,11 +350,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _eventTile(WeekScheduleRow row, EdgeInsets padding) {
     final label = _relativeDayLabel(row.date);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 1),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.grey.shade300),
         ),
         child: ListTile(
@@ -392,11 +391,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _noticeTile(Article article, EdgeInsets padding) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 1),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(0),
           border: Border.all(color: Colors.grey.shade300),
         ),
         child: ListTile(
@@ -406,7 +405,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          subtitle: Text(article.registeredAt),
+          trailing: Text(article.registeredAt, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
           onTap: () {
             Navigator.of(context).push(
               SwipeablePageRoute<void>(
