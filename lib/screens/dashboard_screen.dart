@@ -50,7 +50,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// 이번 주 월요일 00:00, 일요일 23:59의 날짜 문자열 "YYYY-MM-DD"
   static (String start, String end) thisWeekRange() {
     final now = DateTime.now();
-    final monday = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+    final monday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - 1));
     final sunday = monday.add(const Duration(days: 6));
     return (_dateOnlyFormat.format(monday), _dateOnlyFormat.format(sunday));
   }
@@ -80,11 +84,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     List<Article>? notices;
     Newsletter? newsletter;
     try {
-      events = await widget.weekscheduleRepository.getRowsInDateRange(weekStart, weekEnd);
+      events = await widget.weekscheduleRepository.getRowsInDateRange(
+        weekStart,
+        weekEnd,
+      );
     } catch (_) {}
     try {
       final result = await widget.noticeRepository.getPage(pageSize: 50);
-      notices = result.items.where((a) => a.registeredAt.compareTo(sinceStr) >= 0).toList();
+      notices = result.items
+          .where((a) => a.registeredAt.compareTo(sinceStr) >= 0)
+          .toList();
     } catch (_) {}
     try {
       final list = await widget.newsletterRepository.getPage(pageSize: 1);
@@ -188,9 +197,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Navigator.pop(context);
                 Navigator.of(context).push(
                   SwipeablePageRoute<void>(
-                    builder: (_) => NoticeListScreen(
-                      repository: widget.noticeRepository,
-                    ),
+                    builder: (_) =>
+                        NoticeListScreen(repository: widget.noticeRepository),
                   ),
                 );
               },
@@ -231,45 +239,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: _isLoadingWeather
                     ? const Center(child: CircularProgressIndicator())
                     : _weatherData == null
-                        ? const Text('날씨 정보를 불러올 수 없습니다.')
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    ? const Text('날씨 정보를 불러올 수 없습니다.')
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '📍 인제군 | 오늘 $dateStr',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
                             children: [
+                              Image.asset(
+                                _getWeatherIconPath(_weatherData!.weatherIcon),
+                                width: 24,
+                                height: 24,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(Icons.wb_sunny, size: 24);
+                                },
+                              ),
+                              const SizedBox(width: 8),
                               Text(
-                                '📍 인제군 | 오늘 $dateStr',
+                                '${_weatherData!.temp.round()}℃',
                                 style: const TextStyle(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Image.asset(
-                                    _getWeatherIconPath(_weatherData!.weatherIcon),
-                                    width: 24,
-                                    height: 24,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Icon(Icons.wb_sunny, size: 24);
-                                    },
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${_weatherData!.temp.round()}℃',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '| ${_weatherData!.weatherDescription}',
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
-                                ],
+                              const SizedBox(width: 8),
+                              Text(
+                                '| ${_weatherData!.weatherDescription}',
+                                style: const TextStyle(fontSize: 16),
                               ),
                             ],
                           ),
+                        ],
+                      ),
               ),
               // 날씨 아래: 행사/공지/소식지
               ..._buildSectionChildren(),
@@ -295,12 +303,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final hasNotices = _recentNotices != null && _recentNotices!.isNotEmpty;
     final hasNewsletter = _latestNewsletter != null;
     if (!hasEvents && !hasNotices && !hasNewsletter) {
-      return [
-        const SizedBox(
-          height: 120,
-          child: Center(child: Text('대시보드')),
-        ),
-      ];
+      return [const SizedBox(height: 120, child: Center(child: Text('대시보드')))];
     }
     const padding = EdgeInsets.symmetric(horizontal: 16, vertical: 8);
     if (hasEvents) {
@@ -327,21 +330,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: const EdgeInsets.only(left: 16, top: 16, right: 16, bottom: 4),
       child: Text(
         title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     );
   }
 
+  /// "2026-02-19" -> "2/19" (년도 제외)
+  String _formatDateShort(String dateStr) {
+    final d = DateTime.tryParse(dateStr);
+    if (d == null) return dateStr;
+    return DateFormat('M/d').format(d);
+  }
+
+  /// row.date(YYYY-MM-DD) 기준 오늘과의 일 수 차이. null이면 파싱 실패.
+  int? _relativeDayDiff(String dateStr) {
+    final d = DateTime.tryParse(dateStr);
+    if (d == null) return null;
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+    final eventDate = DateTime(d.year, d.month, d.day);
+    return eventDate.difference(today).inDays;
+  }
+
   /// row.date(YYYY-MM-DD) 기준 오늘과의 차이: "N일 남음", "오늘", "N일 지남"
   String _relativeDayLabel(String dateStr) {
-    final d = DateTime.tryParse(dateStr);
-    if (d == null) return '';
-    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-    final eventDate = DateTime(d.year, d.month, d.day);
-    final diff = eventDate.difference(today).inDays;
+    final diff = _relativeDayDiff(dateStr);
+    if (diff == null) return '';
     if (diff > 0) return '$diff일 남음';
     if (diff == 0) return '오늘';
     return '${-diff}일 지남';
@@ -349,32 +366,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _eventTile(WeekScheduleRow row, EdgeInsets padding) {
     final label = _relativeDayLabel(row.date);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 1),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: ListTile(
+    final diff = _relativeDayDiff(row.date);
+    final chipColor = diff == null
+        ? Colors.grey.shade700
+        : diff == 0
+        ? Colors.green
+        : diff > 0
+        ? Colors.blue
+        : Colors.grey.shade700;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListTile(
           contentPadding: padding,
-          leading: label.isEmpty
-              ? null
-              : SizedBox(
-                  width: 56,
-                  child: Center(
-                    child: Text(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (label.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Chip(
+                    backgroundColor: chipColor,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 0,
+                    ),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 0,
+                    ),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: const VisualDensity(
+                      horizontal: -1,
+                      vertical: -1,
+                    ),
+                    label: Text(
                       label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade700,
-                      ),
-                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 10, color: Colors.white),
                     ),
                   ),
                 ),
-          title: Text(row.eventContent),
-          subtitle: Text('${row.date} ${row.time} · ${row.place}'),
+              Text(row.eventContent, style: const TextStyle(fontSize: 12)),
+            ],
+          ),
+          subtitle: Text(
+            '${row.date} ${row.time} · ${row.place}',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          ),
           onTap: () {
             Navigator.of(context).push(
               SwipeablePageRoute<void>(
@@ -385,27 +424,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
             );
           },
         ),
-      ),
+        const Divider(height: 1),
+      ],
     );
   }
 
   Widget _noticeTile(Article article, EdgeInsets padding) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 1),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(0),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: ListTile(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListTile(
           contentPadding: padding,
           title: Text(
             article.title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12),
           ),
-          trailing: Text(article.registeredAt, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          trailing: Text(
+            _formatDateShort(article.registeredAt),
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          ),
           onTap: () {
             Navigator.of(context).push(
               SwipeablePageRoute<void>(
@@ -417,96 +457,111 @@ class _DashboardScreenState extends State<DashboardScreen> {
             );
           },
         ),
-      ),
+        const Divider(height: 1),
+      ],
     );
   }
 
   Widget _newsletterTile(Newsletter newsletter, EdgeInsets padding) {
-    final hasPdf = newsletter.pdfStorageUrl != null && newsletter.pdfStorageUrl!.isNotEmpty;
-    return Padding(
-      padding: padding,
-      child: Container(
-        height: 140,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: hasPdf
-                ? () {
-                    Navigator.of(context).push(
-                      SwipeablePageRoute<void>(
-                        builder: (_) => PdfViewerScreen(
-                          pdfUrl: newsletter.pdfStorageUrl!,
-                          title: newsletter.title,
+    final hasPdf =
+        newsletter.pdfStorageUrl != null &&
+        newsletter.pdfStorageUrl!.isNotEmpty;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: padding,
+          child: SizedBox(
+            height: 140,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: hasPdf
+                    ? () {
+                        Navigator.of(context).push(
+                          SwipeablePageRoute<void>(
+                            builder: (_) => PdfViewerScreen(
+                              pdfUrl: newsletter.pdfStorageUrl!,
+                              title: newsletter.title,
+                            ),
+                          ),
+                        );
+                      }
+                    : () {
+                        Navigator.of(context).push(
+                          SwipeablePageRoute<void>(
+                            builder: (_) => NewsletterListScreen(
+                              repository: widget.newsletterRepository,
+                            ),
+                          ),
+                        );
+                      },
+                borderRadius: BorderRadius.circular(4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: 100,
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(4),
                         ),
-                      ),
-                    );
-                  }
-                : () {
-                    Navigator.of(context).push(
-                      SwipeablePageRoute<void>(
-                        builder: (_) => NewsletterListScreen(
-                          repository: widget.newsletterRepository,
-                        ),
-                      ),
-                    );
-                  },
-            borderRadius: BorderRadius.circular(4),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(
-                  width: 100,
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.horizontal(left: Radius.circular(4)),
-                    child: newsletter.thumbnailUrl != null
-                        ? CachedNetworkImage(
-                            imageUrl: newsletter.thumbnailUrl!,
-                            httpHeaders: const {
-                              'User-Agent':
-                                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                            },
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => const Center(
-                                child: SizedBox(
+                        child: newsletter.thumbnailUrl != null
+                            ? CachedNetworkImage(
+                                imageUrl: newsletter.thumbnailUrl!,
+                                httpHeaders: const {
+                                  'User-Agent':
+                                      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                                },
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => const Center(
+                                  child: SizedBox(
                                     width: 24,
                                     height: 24,
-                                    child: CircularProgressIndicator(strokeWidth: 2))),
-                            errorWidget: (context, url, error) => const Center(
-                              child: Icon(Icons.image_not_supported, size: 40),
-                            ),
-                          )
-                        : const Center(
-                            child: Icon(Icons.picture_as_pdf, size: 48),
-                          ),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        newsletter.title,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) =>
+                                    const Center(
+                                      child: Icon(
+                                        Icons.image_not_supported,
+                                        size: 40,
+                                      ),
+                                    ),
+                              )
+                            : const Center(
+                                child: Icon(Icons.picture_as_pdf, size: 48),
+                              ),
                       ),
                     ),
-                  ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            newsletter.title,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
-      ),
+        const Divider(height: 1),
+      ],
     );
   }
 }
