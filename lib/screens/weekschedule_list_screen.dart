@@ -37,40 +37,6 @@ class _WeekscheduleListScreenState extends State<WeekscheduleListScreen> {
     }).toList();
   }
 
-  Future<void> _openGoogleMaps({
-    required String locationName,
-    double? latitude,
-    double? longitude,
-    String? googleMapsUrl,
-  }) async {
-    try {
-      // googleMapsUrl이 있으면 우선 사용
-      if (googleMapsUrl?.isNotEmpty == true) {
-        final uri = Uri.parse(googleMapsUrl!);
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        return;
-      }
-
-      // 좌표가 있으면 좌표로 열기
-      if (latitude != null && longitude != null) {
-        final url = Uri.parse(
-          'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
-        );
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-        return;
-      }
-
-      // 없으면 장소명으로 검색
-      final query = Uri.encodeComponent(locationName);
-      final url = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=$query',
-      );
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      debugPrint('Error opening Google Maps: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -231,53 +197,48 @@ class _WeekscheduleListScreenState extends State<WeekscheduleListScreen> {
                       },
                     ),
                   ),
+                  const SizedBox(height: 12),
                   const Divider(height: 1),
                   Expanded(
                     child: selectedEvents.isEmpty
                         ? const Center(child: Text('해당 날짜의 일정이 없습니다.'))
-                        : ListView.builder(
+                        : ListView.separated(
                             itemCount: selectedEvents.length,
+                            separatorBuilder: (_, __) =>
+                                const Divider(height: 1),
                             itemBuilder: (context, index) {
                               final row = selectedEvents[index];
-                              return Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
+                              return ListTile(
+                                leading: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.access_time, size: 16),
+                                    const SizedBox(width: 4),
+                                    Text(row.time),
+                                  ],
                                 ),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: Colors.grey.shade300,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
+                                title: Text(
+                                  row.eventContent,
+                                  style: const TextStyle(fontSize: 12),
                                 ),
-                                child: ListTile(
-                                  leading: Row(
-                                    mainAxisSize: MainAxisSize.min,
+                                subtitle: GestureDetector(
+                                  onTap: () => openNaverMap(row.place),
+                                  child: Row(
                                     children: [
-                                      const Icon(Icons.access_time, size: 16),
+                                      const Icon(Icons.place, size: 16),
                                       const SizedBox(width: 4),
-                                      Text(row.time),
-                                    ],
-                                  ),
-                                  title: Text(row.eventContent),
-                                  subtitle: GestureDetector(
-                                    onTap: () => openNaverMap(row.place),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.place, size: 16),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            row.place,
-                                            style: const TextStyle(
-                                              color: Colors.blue,
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
+                                      Expanded(
+                                        child: Text(
+                                          row.place,
+                                          style: const TextStyle(
+                                            color: Colors.blue,
+                                            fontSize: 11,
+                                            decoration:
+                                                TextDecoration.underline,
                                           ),
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               );

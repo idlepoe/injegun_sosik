@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
+import 'package:photo_view/photo_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/article.dart';
@@ -59,6 +60,32 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  static String _resolveImageUrl(String src) {
+    if (src.isEmpty) return src;
+    if (src.startsWith('http://') || src.startsWith('https://')) return src;
+    final base = 'https://www.inje.go.kr';
+    return src.startsWith('/') ? '$base$src' : '$base/$src';
+  }
+
+  void _openPhotoView(BuildContext context, String imageUrl) {
+    final resolved = _resolveImageUrl(imageUrl);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            title: const Text('이미지'),
+          ),
+          body: PhotoView(
+            imageProvider: NetworkImage(resolved),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -170,19 +197,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(tossCardRadius),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -218,23 +234,11 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              Divider(height: 1, color: Colors.grey.shade300),
               if (article.content.isNotEmpty)
                 SelectionArea(
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(tossCardRadius),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Html(
                       data: article.content,
                       style: {
@@ -253,18 +257,49 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                       onLinkTap: (url, _, __) {
                         if (url != null) _openUrl(url);
                       },
+                      extensions: [
+                        TagExtension(
+                          tagsToExtend: {'img'},
+                          builder: (ctx) {
+                            final src = ctx.attributes['src'] ?? '';
+                            if (src.isEmpty) return const SizedBox.shrink();
+                            final resolved = _resolveImageUrl(src);
+                            final buildContext = ctx.buildContext;
+                            return GestureDetector(
+                              onTap: buildContext != null
+                                  ? () => _openPhotoView(buildContext, src)
+                                  : null,
+                              child: Image.network(
+                                resolved,
+                                fit: BoxFit.contain,
+                                loadingBuilder: (_, child, progress) {
+                                  if (progress == null) return child;
+                                  return SizedBox(
+                                    height: 120,
+                                    child: Center(
+                                      child: progress.expectedTotalBytes != null
+                                          ? CircularProgressIndicator(
+                                              value: progress.cumulativeBytesLoaded /
+                                                  progress.expectedTotalBytes!,
+                                              color: tossBlue,
+                                            )
+                                          : const CircularProgressIndicator(color: tossBlue),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 )
               else
                 SelectionArea(
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(tossCardRadius),
-                    ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
                       '내용 없음',
                       style: TextStyle(fontSize: 15, color: tossGreyText),
@@ -272,9 +307,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                   ),
                 ),
               if (article.attachments.isNotEmpty) ...[
-                const SizedBox(height: 20),
+                Divider(height: 1, color: Colors.grey.shade300),
                 Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 8),
+                  padding: const EdgeInsets.only(top: 16, bottom: 8),
                   child: Text(
                     '첨부파일',
                     style: TextStyle(
@@ -284,25 +319,12 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                     ),
                   ),
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(tossCardRadius),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: article.attachments.map(
-                      (a) => ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
+                ...article.attachments.map(
+                  (a) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
                         title: Text(
                           a.attachmentName,
                           style: TextStyle(
@@ -317,7 +339,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                         ),
                         onTap: () => _openUrl(a.attachmentUrl),
                       ),
-                    ).toList(),
+                      Divider(height: 1, color: Colors.grey.shade200),
+                    ],
                   ),
                 ),
               ],

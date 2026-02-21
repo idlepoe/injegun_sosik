@@ -594,9 +594,13 @@ export async function fetchWeekschedule(options?: { maxListPages?: number }): Pr
       for (const row of listRows) {
         const detailUrl = `${BASE_URL}${LIST_PATH}?articleSeq=${row.articleSeq}`;
         logger.info("[fetchWeekschedule] Article detail", { articleSeq: row.articleSeq, title: row.title });
-        const existingByUrl = await articlesRef.where("url", "==", detailUrl).limit(1).get();
-        if (!existingByUrl.empty) {
-          logger.info("[fetchWeekschedule] Duplicate by url, skip before detail fetch", {
+        const existingByUrlAndTitle = await articlesRef
+          .where("url", "==", detailUrl)
+          .where("title", "==", row.title)
+          .limit(1)
+          .get();
+        if (!existingByUrlAndTitle.empty) {
+          logger.info("[fetchWeekschedule] Duplicate by url and title, skip before detail fetch", {
             articleSeq: row.articleSeq,
             title: row.title,
             url: detailUrl,

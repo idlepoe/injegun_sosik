@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -13,16 +14,48 @@ import 'repository/notice_repository.dart';
 import 'repository/weekschedule_repository.dart';
 import 'repository/weather_repository.dart';
 import 'screens/dashboard_screen.dart';
+import 'services/fcm_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // SSL 인증서 검증 우회 (개발 환경용)
+
   HttpOverrides.global = MyHttpOverrides();
-  
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  final navigatorKey = GlobalKey<NavigatorState>();
+  final weekscheduleRepository = WeekscheduleRepository();
+  final newsletterRepository = NewsletterRepository();
+  final noticeRepository = NoticeRepository();
+  final freeRepository = FreeRepository();
+  final jobRepository = JobRepository();
+  final livelihoodRepository = LivelihoodRepository();
+  final weatherRepository = WeatherRepository();
+
+  final homeWidget = DashboardScreen(
+    weekscheduleRepository: weekscheduleRepository,
+    newsletterRepository: newsletterRepository,
+    noticeRepository: noticeRepository,
+    freeRepository: freeRepository,
+    jobRepository: jobRepository,
+    livelihoodRepository: livelihoodRepository,
+    weatherRepository: weatherRepository,
+  );
+
+  FcmService().setNavigationDeps(navigatorKey, () => DashboardScreen(
+        weekscheduleRepository: weekscheduleRepository,
+        newsletterRepository: newsletterRepository,
+        noticeRepository: noticeRepository,
+        freeRepository: freeRepository,
+        jobRepository: jobRepository,
+        livelihoodRepository: livelihoodRepository,
+        weatherRepository: weatherRepository,
+      ));
+  await FcmService().initialize();
+
   await initializeDateFormatting('ko_KR', null);
-  runApp(const MyApp());
+  runApp(MyApp(navigatorKey: navigatorKey, home: homeWidget));
 }
 
 class MyHttpOverrides extends HttpOverrides {
@@ -34,25 +67,21 @@ class MyHttpOverrides extends HttpOverrides {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.navigatorKey, required this.home});
+
+  final GlobalKey<NavigatorState> navigatorKey;
+  final Widget home;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: '인제군 소식',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
         useMaterial3: true,
       ),
-      home: DashboardScreen(
-        weekscheduleRepository: WeekscheduleRepository(),
-        newsletterRepository: NewsletterRepository(),
-        noticeRepository: NoticeRepository(),
-        freeRepository: FreeRepository(),
-        jobRepository: JobRepository(),
-        livelihoodRepository: LivelihoodRepository(),
-        weatherRepository: WeatherRepository(),
-      ),
+      home: home,
     );
   }
 }

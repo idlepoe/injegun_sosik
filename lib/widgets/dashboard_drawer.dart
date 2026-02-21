@@ -53,23 +53,6 @@ class DashboardDrawer extends StatelessWidget {
             ),
           ),
           ListTile(
-            leading: Icon(Icons.event_note, color: tossGreyText),
-            title: Text(
-              '행사소식 (주간일정)',
-              style: TextStyle(color: Colors.grey.shade800),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.of(context).push(
-                SwipeablePageRoute<void>(
-                  builder: (_) => WeekscheduleListScreen(
-                    repository: weekscheduleRepository,
-                  ),
-                ),
-              );
-            },
-          ),
-          ListTile(
             leading: Icon(Icons.campaign, color: tossGreyText),
             title: Text(
               '공지사항',
@@ -146,6 +129,23 @@ class DashboardDrawer extends StatelessWidget {
                 SwipeablePageRoute<void>(
                   builder: (_) => LivelihoodListScreen(
                     repository: livelihoodRepository,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.event_note, color: tossGreyText),
+            title: Text(
+              '행사소식 (주간일정)',
+              style: TextStyle(color: Colors.grey.shade800),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.of(context).push(
+                SwipeablePageRoute<void>(
+                  builder: (_) => WeekscheduleListScreen(
+                    repository: weekscheduleRepository,
                   ),
                 ),
               );

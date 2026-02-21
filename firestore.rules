@@ -22,6 +22,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+    // 대시보드 슬라이더: 앱에서 조회만 (쓰기는 Cloud Functions에서만)
+    match /dashboardSliders/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
     // 그 외 컬렉션: 기본 거부
     match /{document=**} {
       allow read, write: if false;

@@ -25,14 +25,20 @@ class WeekscheduleRepository {
     return snapshot.docs.map(WeekScheduleRow.fromFirestore).toList();
   }
 
-  /// 이번 주 등 특정 날짜 구간의 행사만 조회. start, end는 "YYYY-MM-DD". 날짜 내림차순(desc) 반환.
+  /// 이번 주 등 특정 날짜 구간의 행사만 조회. start, end는 "YYYY-MM-DD". 날짜·시간 오름차순(asc) 반환.
   Future<List<WeekScheduleRow>> getRowsInDateRange(String start, String end) async {
     final snapshot = await _firestore
         .collection('weekschedules')
-        .orderBy('date', descending: true)
-        .startAt([end]).endAt([start])
+        .orderBy('date', descending: false)
+        .startAt([start]).endAt([end])
         .limit(100)
         .get();
-    return snapshot.docs.map(WeekScheduleRow.fromFirestore).toList();
+    final list = snapshot.docs.map(WeekScheduleRow.fromFirestore).toList();
+    list.sort((a, b) {
+      final dateCompare = a.date.compareTo(b.date);
+      if (dateCompare != 0) return dateCompare;
+      return a.time.compareTo(b.time);
+    });
+    return list;
   }
 }

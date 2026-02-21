@@ -18,6 +18,7 @@ import { fetchNotice } from "./models/fetchNotice.js";
 import { fetchJob } from "./models/fetchJob.js";
 import { fetchLivelihood } from "./models/fetchLivelihood.js";
 import { fetchFree } from "./models/fetchFree.js";
+import { fetchDashboardSlider } from "./models/fetchDashboardSlider.js";
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -185,6 +186,28 @@ export const fetchFreeFn = onRequest(
       res.status(200).json(result);
     } catch (err) {
       logger.error("fetchFree failed", err);
+      res.status(500).json({ error: (err as Error).message });
+    }
+  }
+);
+
+/**
+ * 대시보드 슬라이더 크롤링: 포털 메인 배너 슬라이더를 추출하여 dashboardSliders/portal에 저장
+ * GET 호출. Puppeteer/Chrome 사용으로 메모리 1GiB, 타임아웃 5분
+ */
+export const fetchDashboardSliderFn = onRequest(
+  { maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
+  async (req, res) => {
+    if (req.method !== "GET") {
+      res.status(405).set("Allow", "GET").send("Method Not Allowed");
+      return;
+    }
+    try {
+      const result = await fetchDashboardSlider();
+      logger.info("fetchDashboardSlider completed", result);
+      res.status(200).json(result);
+    } catch (err) {
+      logger.error("fetchDashboardSlider failed", err);
       res.status(500).json({ error: (err as Error).message });
     }
   }

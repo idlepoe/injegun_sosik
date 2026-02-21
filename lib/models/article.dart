@@ -70,4 +70,36 @@ abstract class Article with _$Article {
       attachments: attachments,
     );
   }
+
+  /// FCM payload / SharedPreferences 등 Map에서 복원. attachments는 전달되지 않을 수 있어 빈 리스트로 처리.
+  factory Article.fromMap(Map<String, dynamic> data) {
+    return Article(
+      type: (data['type'] as String?) ?? '',
+      url: data['url'] as String?,
+      articleSeq: (data['articleSeq'] as String?) ?? '',
+      boardCode: data['boardCode'] as String?,
+      title: (data['title'] as String?) ?? '',
+      author: (data['author'] as String?) ?? '',
+      registeredAt: (data['registeredAt'] as String?) ?? '',
+      content: (data['content'] as String?) ?? '',
+      attachments: const [], // 푸시 등에서는 전달되지 않음
+    );
+  }
+}
+
+/// Article을 Map으로 직렬화 (SharedPreferences 등 저장용).
+extension ArticleMapExt on Article {
+  Map<String, dynamic> toMap() {
+    return {
+      'type': type,
+      if (url != null) 'url': url,
+      'articleSeq': articleSeq,
+      if (boardCode != null) 'boardCode': boardCode,
+      'title': title,
+      'author': author,
+      'registeredAt': registeredAt,
+      'content': content,
+      'attachments': <Map<String, dynamic>>[], // 푸시 저장 시 첨부 미전달
+    };
+  }
 }

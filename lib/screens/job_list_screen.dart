@@ -5,6 +5,7 @@ import '../bloc/job_list_bloc.dart';
 import '../models/article.dart';
 import '../repository/job_repository.dart';
 import '../widgets/article_list_tile.dart';
+import '../widgets/empty_list_with_refresh.dart';
 
 /// 구인구직: articles 컬렉션 type==job, Container 리스트, RefreshIndicator, 하단 페이징
 class JobListScreen extends StatefulWidget {
@@ -79,9 +80,9 @@ class _JobListScreenState extends State<JobListScreen> {
                 : <Article>[];
             final isLoadingMore = state is JobListLoadingMore;
 
-            if (items.isEmpty) {
-              return const Center(child: Text('목록이 없습니다.'));
-            }
+              if (items.isEmpty) {
+                return EmptyListWithRefresh(onRefresh: _onRefresh);
+              }
 
             return RefreshIndicator(
               onRefresh: _onRefresh,

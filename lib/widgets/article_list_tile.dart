@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:swipeable_page_route/swipeable_page_route.dart';
 
@@ -16,6 +17,63 @@ class ArticleListTile extends StatelessWidget {
   final Article article;
   final ArticleRepository repository;
 
+  static const double _leadingSize = 56;
+
+  static final _imageExtensions = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'};
+
+  bool _isImageAttachment(Attachment a) {
+    final ext = a.attachmentName.split('.').lastOrNull?.toLowerCase() ?? '';
+    return _imageExtensions.contains(ext);
+  }
+
+  Widget _buildLeading(BuildContext context) {
+    if (article.attachments.isNotEmpty) {
+      final first = article.attachments.first;
+      if (first.attachmentUrl.isNotEmpty && _isImageAttachment(first)) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            width: _leadingSize,
+            height: _leadingSize,
+            child: CachedNetworkImage(
+              imageUrl: first.attachmentUrl,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(
+                color: Colors.grey.shade200,
+                child: const Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              ),
+              errorWidget: (_, __, ___) => _leadingArticleSeqFallback(),
+            ),
+          ),
+        );
+      }
+    }
+    return _leadingArticleSeqFallback();
+  }
+
+  Widget _leadingArticleSeqFallback() {
+    return SizedBox(
+      width: _leadingSize,
+      height: _leadingSize,
+      child: Center(
+        child: Text(
+          article.articleSeq,
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -29,30 +87,12 @@ class ArticleListTile extends StatelessWidget {
           ),
         );
       },
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(8),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(6)),
-              child: Text(
-                article.articleSeq,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
+            _buildLeading(context),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

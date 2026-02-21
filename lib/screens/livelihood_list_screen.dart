@@ -5,6 +5,7 @@ import '../bloc/livelihood_list_bloc.dart';
 import '../models/article.dart';
 import '../repository/livelihood_repository.dart';
 import '../widgets/article_list_tile.dart';
+import '../widgets/empty_list_with_refresh.dart';
 
 /// 생활장터: articles 컬렉션 type==livelihood, Container 리스트, RefreshIndicator, 하단 페이징
 class LivelihoodListScreen extends StatefulWidget {
@@ -62,48 +63,58 @@ class _LivelihoodListScreenState extends State<LivelihoodListScreen> {
       },
       child: Scaffold(
         appBar: AppBar(title: const Text('생활장터')),
-        body: BlocConsumer<LivelihoodListBloc, LivelihoodListState>(
-          listener: (context, state) {},
-          builder: (context, state) {
-            if (state is LivelihoodListLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (state is LivelihoodListFailure) {
-              return Center(child: Text(state.message));
-            }
-            final items = state is LivelihoodListSuccess
-                ? state.items
-                : state is LivelihoodListLoadingMore
-                    ? state.items
-                    : <Article>[];
-            final isLoadingMore = state is LivelihoodListLoadingMore;
-
-            if (items.isEmpty) {
-              return const Center(child: Text('목록이 없습니다.'));
-            }
-
-            return RefreshIndicator(
-              onRefresh: _onRefresh,
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                itemCount: items.length + (isLoadingMore ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index == items.length) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Center(child: CircularProgressIndicator()),
+        body: SafeArea(
+          child: BlocConsumer<LivelihoodListBloc, LivelihoodListState>(
+            listener: (context, state) {},
+            builder: (context, state) {
+              if (state is LivelihoodListLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is LivelihoodListFailure) {
+                return Center(child: Text(state.message));
+              }
+              final items = state is LivelihoodListSuccess
+                  ? state.items
+                  : state is LivelihoodListLoadingMore
+                      ? state.items
+                      : <Article>[];
+              final isLoadingMore = state is LivelihoodListLoadingMore;
+          
+              if (items.isEmpty) {
+                return EmptyListWithRefresh(onRefresh: _onRefresh);
+              }
+          
+              return RefreshIndicator(
+                onRefresh: _onRefresh,
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  itemCount: items.length + (isLoadingMore ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == items.length) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    final article = items[index];
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ArticleListTile(
+                          article: article,
+                          repository: widget.repository,
+                        ),
+                        if (index < items.length - 1)
+                          Divider(height: 1, color: Colors.grey.shade300),
+                      ],
                     );
-                  }
-                  final article = items[index];
-                  return ArticleListTile(
-                    article: article,
-                    repository: widget.repository,
-                  );
-                },
-              ),
-            );
-          },
+                  },
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

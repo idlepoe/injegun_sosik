@@ -5,6 +5,7 @@ import '../bloc/free_list_bloc.dart';
 import '../models/article.dart';
 import '../repository/free_repository.dart';
 import '../widgets/article_list_tile.dart';
+import '../widgets/empty_list_with_refresh.dart';
 
 /// 자유게시판: articles 컬렉션 type==free, Container 리스트, RefreshIndicator, 하단 페이징
 class FreeListScreen extends StatefulWidget {
@@ -78,10 +79,9 @@ class _FreeListScreenState extends State<FreeListScreen> {
                     : <Article>[];
             final isLoadingMore = state is FreeListLoadingMore;
 
-            if (items.isEmpty) {
-              return const Center(child: Text('목록이 없습니다.'));
-            }
-
+              if (items.isEmpty) {
+                return EmptyListWithRefresh(onRefresh: _onRefresh);
+              }
             return RefreshIndicator(
               onRefresh: _onRefresh,
               child: ListView.builder(
