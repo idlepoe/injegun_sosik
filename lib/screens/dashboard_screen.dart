@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swipeable_page_route/swipeable_page_route.dart';
@@ -16,6 +17,7 @@ import '../repository/notice_repository.dart';
 import '../repository/weekschedule_repository.dart';
 import '../repository/weather_repository.dart';
 import '../utils/map_launcher.dart';
+import '../utils/toast_utils.dart';
 import '../widgets/dashboard_drawer.dart';
 import '../widgets/dashboard_newsletter_tile.dart';
 import '../widgets/dashboard_notice_tile.dart';
@@ -60,6 +62,9 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   WeatherData? _weatherData;
   bool _isLoadingWeather = true;
+
+  /// 뒤로가기 두 번으로 종료: 마지막 뒤로가기 누른 시각
+  DateTime? _lastBackPress;
 
   List<Article>? _recentNotices;
   Newsletter? _latestNewsletter;
@@ -164,7 +169,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final dateFormat = DateFormat('M.dd (E)', 'ko_KR');
     final dateStr = dateFormat.format(now);
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        final now = DateTime.now();
+        if (_lastBackPress != null &&
+            now.difference(_lastBackPress!).inSeconds < 3) {
+          SystemNavigator.pop();
+          return;
+        }
+        ToastUtils.show(context, "'뒤로' 버튼을 한번 더 누르면 종료됩니다.");
+        setState(() => _lastBackPress = now);
+      },
+      child: Scaffold(
       backgroundColor: tossBackground,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -232,6 +250,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }
