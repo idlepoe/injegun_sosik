@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../bloc/livelihood_list_bloc.dart';
 import '../models/article.dart';
 import '../repository/livelihood_repository.dart';
+import '../services/fcm_service.dart';
 import '../widgets/article_list_tile.dart';
 import '../widgets/empty_list_with_refresh.dart';
 
@@ -21,11 +23,32 @@ class _LivelihoodListScreenState extends State<LivelihoodListScreen> {
   final ScrollController _scrollController = ScrollController();
   static const double _loadMoreThreshold = 200;
   LivelihoodListBloc? _bloc;
+  bool _noticeEnabled = true;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _loadNoticePreference();
+  }
+
+  Future<void> _loadNoticePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool('topic_livelihood') ?? true;
+    if (mounted) setState(() => _noticeEnabled = enabled);
+  }
+
+  Future<void> _toggleNotice() async {
+    final next = !_noticeEnabled;
+    setState(() => _noticeEnabled = next);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('topic_livelihood', next);
+    final fcm = FcmService();
+    if (next) {
+      await fcm.subscribeToTopic('livelihood');
+    } else {
+      await fcm.unsubscribeFromTopic('livelihood');
+    }
   }
 
   @override
@@ -62,7 +85,19 @@ class _LivelihoodListScreenState extends State<LivelihoodListScreen> {
         return bloc;
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('생활장터')),
+        appBar: AppBar(
+          title: const Text('생활장터'),
+          actions: [
+            IconButton(
+              icon: Icon(
+                _noticeEnabled ? Icons.notifications : Icons.notifications_off,
+                color: _noticeEnabled ? null : Colors.grey,
+              ),
+              tooltip: _noticeEnabled ? '알림 받기 끄기' : '알림 받기',
+              onPressed: _toggleNotice,
+            ),
+          ],
+        ),
         body: SafeArea(
           child: BlocConsumer<LivelihoodListBloc, LivelihoodListState>(
             listener: (context, state) {},

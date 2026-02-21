@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swipeable_page_route/swipeable_page_route.dart';
+import 'package:upgrader/upgrader.dart';
 
 import '../models/article.dart';
 import '../models/newsletter.dart';
@@ -213,20 +214,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         livelihoodRepository: widget.livelihoodRepository,
       ),
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _refreshAll,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: 24),
-            children: [
-              DashboardWeatherRow(
-                dateStr: dateStr,
-                weatherData: _weatherData,
-                isLoading: _isLoadingWeather,
-              ),
-              const SizedBox(height: 12),
-              ..._buildSectionChildren(),
-            ],
+        child: UpgradeAlert(
+          child: RefreshIndicator(
+            onRefresh: _refreshAll,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 24),
+              children: [
+                DashboardWeatherRow(
+                  dateStr: dateStr,
+                  weatherData: _weatherData,
+                  isLoading: _isLoadingWeather,
+                ),
+                const SizedBox(height: 12),
+                ..._buildSectionChildren(),
+              ],
+            ),
           ),
         ),
       ),

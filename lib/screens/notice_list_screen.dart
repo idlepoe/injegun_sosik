@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../bloc/notice_list_bloc.dart';
 import '../models/article.dart';
 import '../repository/notice_repository.dart';
+import '../services/fcm_service.dart';
 import '../widgets/article_list_tile.dart';
 import '../widgets/empty_list_with_refresh.dart';
 
@@ -21,11 +23,32 @@ class _NoticeListScreenState extends State<NoticeListScreen> {
   final ScrollController _scrollController = ScrollController();
   static const double _loadMoreThreshold = 200;
   NoticeListBloc? _bloc;
+  bool _noticeEnabled = true;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _loadNoticePreference();
+  }
+
+  Future<void> _loadNoticePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool('topic_notice') ?? true;
+    if (mounted) setState(() => _noticeEnabled = enabled);
+  }
+
+  Future<void> _toggleNotice() async {
+    final next = !_noticeEnabled;
+    setState(() => _noticeEnabled = next);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('topic_notice', next);
+    final fcm = FcmService();
+    if (next) {
+      await fcm.subscribeToTopic('notice');
+    } else {
+      await fcm.unsubscribeFromTopic('notice');
+    }
   }
 
   @override
@@ -63,7 +86,19 @@ class _NoticeListScreenState extends State<NoticeListScreen> {
         return bloc;
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('공지사항')),
+        appBar: AppBar(
+          title: const Text('공지사항'),
+          actions: [
+            IconButton(
+              icon: Icon(
+                _noticeEnabled ? Icons.notifications : Icons.notifications_off,
+                color: _noticeEnabled ? null : Colors.grey,
+              ),
+              tooltip: _noticeEnabled ? '알림 받기 끄기' : '알림 받기',
+              onPressed: _toggleNotice,
+            ),
+          ],
+        ),
         body: SafeArea(
           child: BlocConsumer<NoticeListBloc, NoticeListState>(
             listener: (context, state) {},

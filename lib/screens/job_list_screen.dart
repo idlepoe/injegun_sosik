@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../bloc/job_list_bloc.dart';
 import '../models/article.dart';
 import '../repository/job_repository.dart';
+import '../services/fcm_service.dart';
 import '../widgets/article_list_tile.dart';
 import '../widgets/empty_list_with_refresh.dart';
 
@@ -21,11 +23,32 @@ class _JobListScreenState extends State<JobListScreen> {
   final ScrollController _scrollController = ScrollController();
   static const double _loadMoreThreshold = 200;
   JobListBloc? _bloc;
+  bool _noticeEnabled = true;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _loadNoticePreference();
+  }
+
+  Future<void> _loadNoticePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool('topic_job') ?? true;
+    if (mounted) setState(() => _noticeEnabled = enabled);
+  }
+
+  Future<void> _toggleNotice() async {
+    final next = !_noticeEnabled;
+    setState(() => _noticeEnabled = next);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('topic_job', next);
+    final fcm = FcmService();
+    if (next) {
+      await fcm.subscribeToTopic('job');
+    } else {
+      await fcm.unsubscribeFromTopic('job');
+    }
   }
 
   @override
@@ -63,52 +86,66 @@ class _JobListScreenState extends State<JobListScreen> {
         return bloc;
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('구인구직')),
-        body: BlocConsumer<JobListBloc, JobListState>(
-          listener: (context, state) {},
-          builder: (context, state) {
-            if (state is JobListLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (state is JobListFailure) {
-              return Center(child: Text(state.message));
-            }
-            final items = state is JobListSuccess
-                ? state.items
-                : state is JobListLoadingMore
-                ? state.items
-                : <Article>[];
-            final isLoadingMore = state is JobListLoadingMore;
-
-              if (items.isEmpty) {
-                return EmptyListWithRefresh(onRefresh: _onRefresh);
-              }
-
-            return RefreshIndicator(
-              onRefresh: _onRefresh,
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                itemCount: items.length + (isLoadingMore ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index == items.length) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-                  final article = items[index];
-                  return ArticleListTile(
-                    article: article,
-                    repository: widget.repository,
-                  );
-                },
+        appBar: AppBar(
+          title: const Text('구인구직'),
+          actions: [
+            IconButton(
+              icon: Icon(
+                _noticeEnabled ? Icons.notifications : Icons.notifications_off,
+                color: _noticeEnabled ? null : Colors.grey,
               ),
-            );
-          },
+              tooltip: _noticeEnabled ? '알림 받기 끄기' : '알림 받기',
+              onPressed: _toggleNotice,
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: BlocConsumer<JobListBloc, JobListState>(
+            listener: (context, state) {},
+            builder: (context, state) {
+              if (state is JobListLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is JobListFailure) {
+                return Center(child: Text(state.message));
+              }
+              final items = state is JobListSuccess
+                  ? state.items
+                  : state is JobListLoadingMore
+                  ? state.items
+                  : <Article>[];
+              final isLoadingMore = state is JobListLoadingMore;
+          
+                if (items.isEmpty) {
+                  return EmptyListWithRefresh(onRefresh: _onRefresh);
+                }
+          
+              return RefreshIndicator(
+                onRefresh: _onRefresh,
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  itemCount: items.length + (isLoadingMore ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == items.length) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    final article = items[index];
+                    return ArticleListTile(
+                      article: article,
+                      repository: widget.repository,
+                    );
+                  },
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

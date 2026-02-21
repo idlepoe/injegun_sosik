@@ -36,10 +36,10 @@ class _SettingScreenState extends State<SettingScreen> {
   /// 설정 화면 진입 시 저장된 값만 UI에 반영. FCM 구독/해제는 토글 변경 시에만 수행.
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
-    final master = prefs.getBool('event_notification') ?? true;
+    final master = prefs.getBool('event_notification') ?? false;
     final Map<String, bool> topicEnabled = {};
     for (final e in _topics) {
-      topicEnabled[e.topic] = prefs.getBool('topic_${e.topic}') ?? true;
+      topicEnabled[e.topic] = prefs.getBool('topic_${e.topic}') ?? false;
     }
     if (mounted) {
       setState(() {

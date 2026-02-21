@@ -66,10 +66,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyD9KvJQCehvYbc215GVGVDRXiaaZjXVrK4',
-    appId: '1:611026964031:ios:8d08fe0eb31ec77e4a728a',
+    appId: '1:611026964031:ios:58ba739a09e47ca44a728a',
     messagingSenderId: '611026964031',
     projectId: 'injegun-sosik',
     storageBucket: 'injegun-sosik.firebasestorage.app',
-    iosBundleId: 'com.jylee.injegunSosik',
+    iosBundleId: 'com.jylee.injegun.sosik',
   );
+
 }

@@ -1,7 +1,13 @@
-# injegun-sosik
+인제군 소식
 
-flutter pub add \
-flutter pub add  dev:build_runner 
-flutter pub add  freezed_annotation 
-flutter pub add  dev:freezed
-flutter pub add json_annotation dev:json_serializable
+인제 출신 개발자가 인제군청 정보 좀 더 쉽게 받아서 쓰라고 만든 인제 군청 소식 알림 앱
+
+> **안내**: 본 앱은 인제군청의 정보를 표시하고 있으나 인제군 또는 인제군청의 공식 앱이 아닙니다.
+
+## 인제군청 소식
+
+- **대시보드**: 날씨, 공지사항, 이번 주 행사, 합강소식지 요약·슬라이더
+- **푸시 알림**: 주간일정·공지·구인구직·생활장터·자유게시판 토픽별 구독/해제
+- **목록·상세**: 공지·구인구직·생활장터·자유게시판·주간일정 목록 및 글 상세·원본 링크
+- **합강소식지**: PDF 뷰어로 소식지 열기
+- **설정**: 알림 온/오프, 토픽별 알림 on/off

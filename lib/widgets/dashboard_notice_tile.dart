@@ -24,7 +24,7 @@ class DashboardNoticeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateShort = _formatDateShort(article.registeredAt);
-    final subtitle = '공지 | $dateShort';
+    final subtitle = '${article.author} | $dateShort';
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -44,7 +44,7 @@ class DashboardNoticeTile extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 12,
                       color: Colors.grey.shade900,
                       fontWeight: FontWeight.w500,
                     ),
@@ -52,7 +52,7 @@ class DashboardNoticeTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 13, color: tossGreyText),
+                    style: TextStyle(fontSize: 11, color: tossGreyText),
                   ),
                 ],
               ),

@@ -32,7 +32,7 @@ setGlobalOptions({ maxInstances: 10 });
  * Puppeteer/Chrome 사용으로 메모리 1GB, 타임아웃 5분
  */
 export const fetchWeekscheduleFn = onRequest(
-  { maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
+  { region: "asia-northeast3", maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
   async (req, res) => {
     if (req.method !== "GET") {
       res.status(405).set("Allow", "GET").send("Method Not Allowed");
@@ -58,7 +58,7 @@ export const fetchWeekscheduleFn = onRequest(
  * Puppeteer/Chrome + PDF 버퍼로 메모리 사용이 커서 4GB 권장 (fetchNewsletters.ts 주석 참고)
  */
 export const fetchNewslettersFn = onRequest(
-  { maxInstances: 5, memory: "4GiB", timeoutSeconds: 300 },
+  { region: "asia-northeast3", maxInstances: 5, memory: "4GiB", timeoutSeconds: 300 },
   async (req, res) => {
     if (req.method !== "GET") {
       res.status(405).set("Allow", "GET").send("Method Not Allowed");
@@ -81,7 +81,7 @@ export const fetchNewslettersFn = onRequest(
  * GET 호출. 날짜 기준으로 중복된 경우 기존 데이터를 업데이트
  */
 export const fetchWeatherFn = onRequest(
-  { maxInstances: 10, memory: "256MiB", timeoutSeconds: 60 },
+  { region: "asia-northeast3", maxInstances: 10, memory: "256MiB", timeoutSeconds: 60 },
   async (req, res) => {
     if (req.method !== "GET") {
       res.status(405).set("Allow", "GET").send("Method Not Allowed");
@@ -104,7 +104,7 @@ export const fetchWeatherFn = onRequest(
  * Puppeteer/Chrome 사용으로 메모리 1GB, 타임아웃 5분
  */
 export const fetchNoticeFn = onRequest(
-  { maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
+  { region: "asia-northeast3", maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
   async (req, res) => {
     if (req.method !== "GET") {
       res.status(405).set("Allow", "GET").send("Method Not Allowed");
@@ -127,7 +127,7 @@ export const fetchNoticeFn = onRequest(
  * GET 호출. 쿼리: maxListPages (최대 목록 페이지 수, 기본 1)
  */
 export const fetchJobFn = onRequest(
-  { maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
+  { region: "asia-northeast3", maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
   async (req, res) => {
     if (req.method !== "GET") {
       res.status(405).set("Allow", "GET").send("Method Not Allowed");
@@ -150,7 +150,7 @@ export const fetchJobFn = onRequest(
  * GET 호출. 쿼리: maxListPages (최대 목록 페이지 수, 기본 1)
  */
 export const fetchLivelihoodFn = onRequest(
-  { maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
+  { region: "asia-northeast3", maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
   async (req, res) => {
     if (req.method !== "GET") {
       res.status(405).set("Allow", "GET").send("Method Not Allowed");
@@ -173,7 +173,7 @@ export const fetchLivelihoodFn = onRequest(
  * GET 호출. 쿼리: maxListPages (최대 목록 페이지 수, 기본 1)
  */
 export const fetchFreeFn = onRequest(
-  { maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
+  { region: "asia-northeast3", maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
   async (req, res) => {
     if (req.method !== "GET") {
       res.status(405).set("Allow", "GET").send("Method Not Allowed");
@@ -196,7 +196,7 @@ export const fetchFreeFn = onRequest(
  * GET 호출. Puppeteer/Chrome 사용으로 메모리 1GiB, 타임아웃 5분
  */
 export const fetchDashboardSliderFn = onRequest(
-  { maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
+  { region: "asia-northeast3", maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
   async (req, res) => {
     if (req.method !== "GET") {
       res.status(405).set("Allow", "GET").send("Method Not Allowed");
@@ -212,3 +212,9 @@ export const fetchDashboardSliderFn = onRequest(
     }
   }
 );
+
+export {
+  scheduledFetchEveryThreeHours,
+  scheduledFetchTwiceDaily,
+  runFetchEveryThreeHoursFn,
+} from "./scheduled.js";

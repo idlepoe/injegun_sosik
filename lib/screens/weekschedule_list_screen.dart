@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../bloc/weekschedule_list_bloc.dart';
 import '../models/weekschedule_row.dart';
 import '../repository/weekschedule_repository.dart';
+import '../services/fcm_service.dart';
 import '../utils/map_launcher.dart';
 
 /// 행사소식: weekschedules 컬렉션을 TableCalendar + 리스트로 표시
@@ -23,6 +25,32 @@ class _WeekscheduleListScreenState extends State<WeekscheduleListScreen> {
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
+  bool _noticeEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNoticePreference();
+  }
+
+  Future<void> _loadNoticePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool('topic_weekschedule') ?? true;
+    if (mounted) setState(() => _noticeEnabled = enabled);
+  }
+
+  Future<void> _toggleNotice() async {
+    final next = !_noticeEnabled;
+    setState(() => _noticeEnabled = next);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('topic_weekschedule', next);
+    final fcm = FcmService();
+    if (next) {
+      await fcm.subscribeToTopic('weekschedule');
+    } else {
+      await fcm.unsubscribeFromTopic('weekschedule');
+    }
+  }
 
   List<WeekScheduleRow> _getEventsForDay(
     DateTime day,
@@ -47,6 +75,14 @@ class _WeekscheduleListScreenState extends State<WeekscheduleListScreen> {
         appBar: AppBar(
           title: const Text('행사소식'),
           actions: [
+            IconButton(
+              icon: Icon(
+                _noticeEnabled ? Icons.notifications : Icons.notifications_off,
+                color: _noticeEnabled ? null : Colors.grey,
+              ),
+              tooltip: _noticeEnabled ? '알림 받기 끄기' : '알림 받기',
+              onPressed: _toggleNotice,
+            ),
             TextButton(
               onPressed: () async {
                 final uri = Uri.parse(
