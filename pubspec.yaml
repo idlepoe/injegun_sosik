@@ -1,7 +1,7 @@
 name: injegun_sosik
 description: "A new Flutter project."
 publish_to: 'none'
-version: 1.0.2+3
+version: 1.0.3+4
 environment:
   sdk: ^3.9.2
 dependencies:
@@ -27,7 +27,6 @@ dependencies:
   package_info_plus: ^8.0.2
   swipeable_page_route: ^0.4.8
   flutter_html: ^3.0.0
-  google_maps_flutter: ^2.14.2
   upgrader: ^12.5.0
   go_router: ^17.1.0
   flutter_bloc: ^9.1.1

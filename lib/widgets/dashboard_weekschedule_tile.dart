@@ -3,44 +3,18 @@ import 'package:flutter/material.dart';
 import '../models/weekschedule_row.dart';
 import 'dashboard_style.dart';
 
-/// 대시보드 다가오는 행사 타일 (행사명 탭 시 상세 이동, 장소 탭 시 지도)
+/// 대시보드 다가오는 행사 타일. 타일 전체 탭 시 행사소식 목록 화면으로 이동.
 class DashboardWeekscheduleTile extends StatelessWidget {
   const DashboardWeekscheduleTile({
     super.key,
     required this.row,
     this.isToday = false,
-    required this.onPlaceTap,
-    this.onEventTap,
+    required this.onTap,
   });
 
   final WeekScheduleRow row;
   final bool isToday;
-  final void Function(String place) onPlaceTap;
-
-  /// articleSeq가 있을 때 행사명 탭 시 호출 (ArticleDetailScreen 이동용)
-  final void Function(String articleSeq)? onEventTap;
-
-  Widget _buildTitle() {
-    final text = Text(
-      row.eventContent,
-      style: TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: Colors.grey.shade900,
-      ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-    );
-    final hasArticleSeq = row.articleSeq != null && row.articleSeq!.isNotEmpty;
-    if (hasArticleSeq && onEventTap != null) {
-      return GestureDetector(
-        onTap: () => onEventTap!(row.articleSeq!),
-        behavior: HitTestBehavior.opaque,
-        child: text,
-      );
-    }
-    return text;
-  }
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +28,7 @@ class DashboardWeekscheduleTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ListTile(
               contentPadding: EdgeInsets.zero,
+              onTap: onTap,
               leading: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -87,25 +62,30 @@ class DashboardWeekscheduleTile extends StatelessWidget {
                   ),
                 ],
               ),
-              title: _buildTitle(),
-              subtitle: GestureDetector(
-                onTap: () => onPlaceTap(row.place),
-                child: Row(
-                  children: [
-                    Icon(Icons.place, size: 13, color: tossGreyText),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        row.place,
-                        style: const TextStyle(
-                          color: Colors.blue,
-                          decoration: TextDecoration.underline,
-                          fontSize: 11,
-                        ),
+              title: Text(
+                row.eventContent,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade900,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Row(
+                children: [
+                  Icon(Icons.place, size: 13, color: tossGreyText),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      row.place,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 11,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

@@ -19,7 +19,6 @@ import '../repository/notice_repository.dart';
 import '../repository/weekschedule_repository.dart';
 import '../repository/weather_repository.dart';
 import '../services/fcm_service.dart';
-import '../utils/map_launcher.dart';
 import '../utils/toast_utils.dart';
 import '../widgets/dashboard_drawer.dart';
 import '../widgets/dashboard_newsletter_tile.dart';
@@ -460,8 +459,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           DashboardWeekscheduleTile(
                             row: row,
                             isToday: row.date == todayStr,
-                            onPlaceTap: openNaverMap,
-                            onEventTap: (_) {
+                            onTap: () {
                               Navigator.of(context).push(
                                 SwipeablePageRoute<void>(
                                   builder: (_) => WeekscheduleListScreen(
