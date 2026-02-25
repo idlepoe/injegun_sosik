@@ -162,7 +162,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                                     child: Badge(
                                       backgroundColor: entry.isRead
                                           ? Colors.grey.shade400
-                                          : tossBlue,
+                                          : Colors.redAccent,
                                       label: Text(
                                         entry.isRead ? '읽음' : '읽지 않음',
                                         style: const TextStyle(

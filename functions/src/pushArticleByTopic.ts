@@ -23,6 +23,8 @@ interface ArticleDoc {
   content?: string;
   attachments?: Array< { attachmentUrl: string; attachmentName: string } >;
   updatedAt?: unknown;
+  registeredAt?: unknown;
+  author?: string;
 }
 
 const MAX_CONTENT_LENGTH = 150;
@@ -105,15 +107,25 @@ async function sendPushForType(type: ArticleType): Promise<void> {
   const body = contentExcerpt || articleTitle || "새 글이 올라왔습니다.";
   const detailUrl = latest.url ?? "";
 
+  const registeredAtRaw = latest.registeredAt;
+  const registeredAtStr =
+    registeredAtRaw instanceof Timestamp
+      ? String(registeredAtRaw.toMillis())
+      : registeredAtRaw != null
+        ? String(registeredAtRaw)
+        : "";
+
   const dataFields: Record<string, string> = {
     type: "new_article",
     articleType: type,
     count: String(articles.length),
     articleSeq: latest.articleSeq,
-    title: latest.title ?? "",
+    title: `(${topicLabel}) ${latest.title ?? ""}`,
     url: detailUrl,
     imageUrl: imageUrl ?? "",
     content: body,
+    author: latest.author ?? "",
+    registeredAt: registeredAtStr,
   };
 
   const message: Record<string, unknown> = {

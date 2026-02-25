@@ -10,6 +10,8 @@ class ToastUtils {
     IconSnackBar.show(
       context,
       snackBarType: SnackBarType.alert,
+      maxLines: 2,
+
       label: message,
       backgroundColor: Colors.green,
       iconColor: Colors.white,
@@ -23,6 +25,7 @@ class ToastUtils {
     IconSnackBar.show(
       context,
       snackBarType: SnackBarType.fail,
+      maxLines: 2,
       label: message,
     );
   }
@@ -34,6 +37,7 @@ class ToastUtils {
     IconSnackBar.show(
       context,
       snackBarType: SnackBarType.alert,
+      maxLines: 2,
       label: message,
     );
   }
@@ -45,6 +49,7 @@ class ToastUtils {
     IconSnackBar.show(
       context,
       snackBarType: SnackBarType.alert,
+      maxLines: 2,
       label: message,
     );
   }

@@ -39,7 +39,8 @@ class _SettingScreenState extends State<SettingScreen> {
     final master = prefs.getBool('event_notification') ?? false;
     final Map<String, bool> topicEnabled = {};
     for (final e in _topics) {
-      topicEnabled[e.topic] = prefs.getBool('topic_${e.topic}') ?? false;
+      topicEnabled[e.topic] =
+          prefs.getBool('subscribed_topic_${e.topic}') ?? false;
     }
     if (mounted) {
       setState(() {
@@ -52,18 +53,23 @@ class _SettingScreenState extends State<SettingScreen> {
   }
 
   Future<void> _setMaster(bool value) async {
+    // UI를 먼저 갱신: 마스터 및 모든 토픽 토글 상태를 일괄 변경
+    setState(() {
+      _masterEnabled = value;
+      for (final e in _topics) {
+        _topicEnabled[e.topic] = value;
+      }
+    });
+
+    // 마스터 설정 값 저장
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('event_notification', value);
-    setState(() => _masterEnabled = value);
 
+    // FCM 토픽 구독/해제 처리
     final fcm = FcmService();
     if (value) {
       for (final e in _topics) {
-        if (_topicEnabled[e.topic] ?? true) {
-          await fcm.subscribeToTopic(e.topic);
-        } else {
-          await fcm.unsubscribeFromTopic(e.topic);
-        }
+        await fcm.subscribeToTopic(e.topic);
       }
     } else {
       for (final e in _topics) {
@@ -73,10 +79,10 @@ class _SettingScreenState extends State<SettingScreen> {
   }
 
   Future<void> _setTopic(String topic, bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('topic_$topic', value);
+    // UI를 먼저 갱신
     setState(() => _topicEnabled[topic] = value);
 
+    // FCM 토픽 구독/해제는 서비스에 위임 (SharedPreferences 키는 FcmService에서 관리)
     final fcm = FcmService();
     if (value) {
       await fcm.subscribeToTopic(topic);
@@ -143,7 +149,7 @@ class _SettingScreenState extends State<SettingScreen> {
           ),
           const SizedBox(height: 8),
           ..._topics.map((e) {
-            final enabled = _topicEnabled[e.topic] ?? true;
+            final enabled = _topicEnabled[e.topic] ?? false;
             return Material(
               color: Colors.white,
               child: ListTile(

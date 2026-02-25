@@ -13,6 +13,7 @@ import 'package:path/path.dart' as path;
 import '../models/article.dart';
 import '../repository/notice_repository.dart';
 import '../screens/article_detail_screen.dart';
+import '../utils/toast_utils.dart';
 
 /// 푸시 알림 리스트 SharedPreferences 키 (알림 목록 화면에서 읽기/쓰기용)
 const String keyPushNotificationList = 'push_notification_list';
@@ -22,6 +23,15 @@ class FcmService {
   static final FcmService _instance = FcmService._internal();
   factory FcmService() => _instance;
   FcmService._internal();
+
+  /// 토픽 한글 라벨 매핑
+  static const Map<String, String> _topicLabels = {
+    'notice': '공지사항',
+    'job': '구인구직',
+    'livelihood': '생활장터',
+    'free': '자유게시판',
+    'weekschedule': '행사소식(주간일정)',
+  };
 
   GlobalKey<NavigatorState>? _navigatorKey;
   Widget Function()? _homeBuilder;
@@ -422,8 +432,28 @@ class FcmService {
       await _messaging.subscribeToTopic(topic);
       await prefs.setBool(subscribedKey, true);
       debugPrint('Subscribed to topic: $topic');
+
+      // UI 컨텍스트가 있으면 구독 성공 토스트 표시
+      final context = _navigatorKey?.currentContext;
+      if (context != null) {
+        final label = _topicLabels[topic] ?? topic;
+        ToastUtils.showSuccess(
+          context,
+          '[$label] 알림 구독이 활성화되었습니다.',
+        );
+      }
     } catch (e) {
       debugPrint('Error subscribing to topic $topic: $e');
+
+      // 오류 시 토스트로 안내
+      final context = _navigatorKey?.currentContext;
+      if (context != null) {
+        final label = _topicLabels[topic] ?? topic;
+        ToastUtils.showError(
+          context,
+          '[$label] 알림 구독 중 오류가 발생했습니다.',
+        );
+      }
     }
   }
 
@@ -443,8 +473,28 @@ class FcmService {
       await _messaging.unsubscribeFromTopic(topic);
       await prefs.setBool(subscribedKey, false);
       debugPrint('Unsubscribed from topic: $topic');
+
+      // UI 컨텍스트가 있으면 구독 해제 토스트 표시
+      final context = _navigatorKey?.currentContext;
+      if (context != null) {
+        final label = _topicLabels[topic] ?? topic;
+        ToastUtils.show(
+          context,
+          '[$label] 알림 구독이 해제되었습니다.',
+        );
+      }
     } catch (e) {
       debugPrint('Error unsubscribing from topic $topic: $e');
+
+      // 오류 시 토스트로 안내
+      final context = _navigatorKey?.currentContext;
+      if (context != null) {
+        final label = _topicLabels[topic] ?? topic;
+        ToastUtils.showError(
+          context,
+          '[$label] 알림 구독 해제 중 오류가 발생했습니다.',
+        );
+      }
     }
   }
 
