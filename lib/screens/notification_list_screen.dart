@@ -136,33 +136,45 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                       ),
                     )
                   : ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       itemCount: _items.length,
                       itemBuilder: (context, index) {
                         final entry = _items[index];
-                        return Stack(
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            ArticleListTile(
-                              article: entry.article,
-                              repository: _repositoryForType(
-                                entry.article.type,
-                              ),
-                            ),
-                            Positioned(
-                              top: 4,
-                              left: 8,
-                              child: Badge(
-                                backgroundColor: entry.isRead
-                                    ? Colors.grey.shade400
-                                    : tossBlue,
-                                label: Text(
-                                  entry.isRead ? '읽음' : '읽지 않음',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.white,
+                            Stack(
+                              children: [
+                                ArticleListTile(
+                                  article: entry.article,
+                                  repository: _repositoryForType(
+                                    entry.article.type,
                                   ),
                                 ),
-                              ),
+                                Positioned(
+                                  top: 4,
+                                  left: 8,
+                                  child: Badge(
+                                    backgroundColor: entry.isRead
+                                        ? Colors.grey.shade400
+                                        : tossBlue,
+                                    label: Text(
+                                      entry.isRead ? '읽음' : '읽지 않음',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
+                            if (index < _items.length - 1)
+                              Divider(height: 1, color: Colors.grey.shade300),
                           ],
                         );
                       },

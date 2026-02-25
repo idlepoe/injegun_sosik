@@ -115,11 +115,11 @@ class _JobListScreenState extends State<JobListScreen> {
                   ? state.items
                   : <Article>[];
               final isLoadingMore = state is JobListLoadingMore;
-          
-                if (items.isEmpty) {
-                  return EmptyListWithRefresh(onRefresh: _onRefresh);
-                }
-          
+
+              if (items.isEmpty) {
+                return EmptyListWithRefresh(onRefresh: _onRefresh);
+              }
+
               return RefreshIndicator(
                 onRefresh: _onRefresh,
                 child: ListView.builder(
@@ -137,9 +137,17 @@ class _JobListScreenState extends State<JobListScreen> {
                       );
                     }
                     final article = items[index];
-                    return ArticleListTile(
-                      article: article,
-                      repository: widget.repository,
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ArticleListTile(
+                          article: article,
+                          repository: widget.repository,
+                        ),
+                        if (index < items.length - 1)
+                          Divider(height: 1, color: Colors.grey.shade300),
+                      ],
                     );
                   },
                 ),

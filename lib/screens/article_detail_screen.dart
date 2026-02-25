@@ -1,10 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/article.dart';
 import '../repository/article_repository.dart';
+import '../services/fcm_service.dart';
 import '../widgets/dashboard_style.dart';
 
 /// articleSeq만 전달받아 상세 조회 후 표시
@@ -30,7 +34,43 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _markAsReadInPushNotificationList();
     _load();
+  }
+
+  Future<void> _markAsReadInPushNotificationList() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList = prefs.getString(keyPushNotificationList);
+    if (jsonList == null || jsonList.isEmpty) return;
+
+    try {
+      final list = jsonDecode(jsonList) as List<dynamic>;
+      var changed = false;
+
+      for (var i = 0; i < list.length; i++) {
+        final item = list[i];
+        if (item is! Map<String, dynamic>) continue;
+
+        final article = item['article'];
+        final articleMap = article is Map<String, dynamic> ? article : null;
+        if (articleMap == null) continue;
+
+        final articleSeq = articleMap['articleSeq']?.toString();
+        if (articleSeq == widget.articleSeq && (item['isRead'] as bool? ?? false) == false) {
+          list[i] = {
+            ...item,
+            'isRead': true,
+          };
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        await prefs.setString(keyPushNotificationList, jsonEncode(list));
+      }
+    } catch (_) {
+      // push_notification_list 파싱 실패 시 읽음 처리만 건너뜀
+    }
   }
 
   Future<void> _load() async {

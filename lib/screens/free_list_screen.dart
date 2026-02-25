@@ -136,9 +136,17 @@ class _FreeListScreenState extends State<FreeListScreen> {
                       );
                     }
                     final article = items[index];
-                    return ArticleListTile(
-                      article: article,
-                      repository: widget.repository,
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ArticleListTile(
+                          article: article,
+                          repository: widget.repository,
+                        ),
+                        if (index < items.length - 1)
+                          Divider(height: 1, color: Colors.grey.shade300),
+                      ],
                     );
                   },
                 ),

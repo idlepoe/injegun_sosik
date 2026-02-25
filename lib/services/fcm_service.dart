@@ -54,7 +54,8 @@ class FcmService {
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       debugPrint('User granted permission');
-    } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
+    } else if (settings.authorizationStatus ==
+        AuthorizationStatus.provisional) {
       debugPrint('User granted provisional permission');
     } else {
       debugPrint('User declined or has not accepted permission');
@@ -175,22 +176,23 @@ class FcmService {
 
     final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'high_importance_channel',
-      'High Importance Notifications',
-      channelDescription: 'This channel is used for important notifications.',
-      importance: Importance.high,
-      priority: Priority.high,
-      showWhen: true,
-      icon: '@drawable/push_icon',
-      styleInformation: bigPictureStyleInformation,
-    );
+          'high_importance_channel',
+          'High Importance Notifications',
+          channelDescription:
+              'This channel is used for important notifications.',
+          importance: Importance.high,
+          priority: Priority.high,
+          showWhen: true,
+          icon: '@drawable/push_icon',
+          styleInformation: bigPictureStyleInformation,
+        );
 
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        );
 
     final NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
@@ -369,10 +371,7 @@ class FcmService {
       final List<dynamic> list = jsonList != null && jsonList.isNotEmpty
           ? (jsonDecode(jsonList) as List<dynamic>)
           : [];
-      list.add({
-        'article': article.toMap(),
-        'isRead': false,
-      });
+      list.add({'article': article.toMap(), 'isRead': false});
       await prefs.setString(keyPushNotificationList, jsonEncode(list));
       debugPrint('Saved push notification to list: ${article.articleSeq}');
     } catch (e) {
@@ -403,13 +402,15 @@ class FcmService {
       // 알림 설정 확인
       final prefs = await SharedPreferences.getInstance();
       final isNotificationEnabled = prefs.getBool('event_notification') ?? true;
-      
+
       // 알림이 비활성화되어 있으면 skip
       if (!isNotificationEnabled) {
-        debugPrint('Notification is disabled, skipping topic subscription: $topic');
+        debugPrint(
+          'Notification is disabled, skipping topic subscription: $topic',
+        );
         return;
       }
-      
+
       await _messaging.subscribeToTopic(topic);
       debugPrint('Subscribed to topic: $topic');
     } catch (e) {
