@@ -16,6 +16,7 @@ class DashboardWeekscheduleTile extends StatelessWidget {
   final WeekScheduleRow row;
   final bool isToday;
   final void Function(String place) onPlaceTap;
+
   /// articleSeq가 있을 때 행사명 탭 시 호출 (ArticleDetailScreen 이동용)
   final void Function(String articleSeq)? onEventTap;
 
@@ -27,9 +28,10 @@ class DashboardWeekscheduleTile extends StatelessWidget {
         fontWeight: FontWeight.w500,
         color: Colors.grey.shade900,
       ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
-    final hasArticleSeq =
-        row.articleSeq != null && row.articleSeq!.isNotEmpty;
+    final hasArticleSeq = row.articleSeq != null && row.articleSeq!.isNotEmpty;
     if (hasArticleSeq && onEventTap != null) {
       return GestureDetector(
         onTap: () => onEventTap!(row.articleSeq!),
@@ -49,7 +51,7 @@ class DashboardWeekscheduleTile extends StatelessWidget {
         Material(
           color: Colors.white,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Column(

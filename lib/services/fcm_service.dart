@@ -411,7 +411,16 @@ class FcmService {
         return;
       }
 
+      // 이미 동일 topic이 구독 상태이면 재요청하지 않음
+      final subscribedKey = 'subscribed_topic_$topic';
+      final alreadySubscribed = prefs.getBool(subscribedKey) ?? false;
+      if (alreadySubscribed) {
+        debugPrint('Topic already subscribed, skip: $topic');
+        return;
+      }
+
       await _messaging.subscribeToTopic(topic);
+      await prefs.setBool(subscribedKey, true);
       debugPrint('Subscribed to topic: $topic');
     } catch (e) {
       debugPrint('Error subscribing to topic $topic: $e');
@@ -421,7 +430,18 @@ class FcmService {
   /// Topic 구독 해제
   Future<void> unsubscribeFromTopic(String topic) async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final subscribedKey = 'subscribed_topic_$topic';
+      final alreadySubscribed = prefs.getBool(subscribedKey) ?? false;
+
+      // 이미 구독 해제 상태이면 재요청하지 않음
+      if (!alreadySubscribed) {
+        debugPrint('Topic already unsubscribed, skip: $topic');
+        return;
+      }
+
       await _messaging.unsubscribeFromTopic(topic);
+      await prefs.setBool(subscribedKey, false);
       debugPrint('Unsubscribed from topic: $topic');
     } catch (e) {
       debugPrint('Error unsubscribing from topic $topic: $e');

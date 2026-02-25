@@ -58,17 +58,14 @@ class ArticleListTile extends StatelessWidget {
   }
 
   Widget _leadingArticleSeqFallback() {
-    return SizedBox(
-      width: _leadingSize,
-      height: _leadingSize,
-      child: Center(
-        child: Text(
-          article.articleSeq,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey.shade700,
-            fontWeight: FontWeight.w500,
-          ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        width: _leadingSize,
+        height: _leadingSize,
+        child: Image.asset(
+          'assets/icon/icon.png',
+          fit: BoxFit.cover,
         ),
       ),
     );

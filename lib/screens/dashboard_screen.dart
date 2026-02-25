@@ -76,6 +76,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   int _unreadNotificationCount = 0;
 
+  late final PageController _noticePageController;
+  int _currentNoticePage = 0;
+
+  late final PageController _weekschedulePageController;
+  int _currentWeekschedulePage = 0;
+
   static final _dateOnlyFormat = DateFormat('yyyy-MM-dd');
 
   /// 오늘 기준 7일 전 "YYYY-MM-DD"
@@ -87,10 +93,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _noticePageController = PageController();
+    _weekschedulePageController = PageController();
     _loadWeather();
     _loadDashboard();
     _loadUnreadNotificationCount();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkPendingArticleSeq());
+  }
+
+  @override
+  void dispose() {
+    _noticePageController.dispose();
+    _weekschedulePageController.dispose();
+    super.dispose();
   }
 
   /// 앱이 종료 상태에서 알림으로 켜진 경우 pending_article_seq 처리
@@ -225,26 +240,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         title: const Text('인제군 소식'),
         actions: [
-          Badge.count(
-            count: _unreadNotificationCount,
-            isLabelVisible: _unreadNotificationCount > 0,
-            child: IconButton(
-              icon: const Icon(Icons.notifications_outlined),
-              onPressed: () {
-                Navigator.of(context)
-                    .push(
-                      SwipeablePageRoute<void>(
-                        builder: (_) => NotificationListScreen(
-                          noticeRepository: widget.noticeRepository,
-                          freeRepository: widget.freeRepository,
-                          jobRepository: widget.jobRepository,
-                          livelihoodRepository: widget.livelihoodRepository,
-                        ),
-                      ),
-                    )
-                    .then((_) => _loadUnreadNotificationCount());
-              },
+          IconButton(
+            icon: Badge.count(
+              count: _unreadNotificationCount,
+              isLabelVisible: _unreadNotificationCount > 0,
+              child: const Icon(Icons.notifications_outlined),
             ),
+            onPressed: () {
+              Navigator.of(context)
+                  .push(
+                    SwipeablePageRoute<void>(
+                      builder: (_) => NotificationListScreen(
+                        noticeRepository: widget.noticeRepository,
+                        freeRepository: widget.freeRepository,
+                        jobRepository: widget.jobRepository,
+                        livelihoodRepository: widget.livelihoodRepository,
+                      ),
+                    ),
+                  )
+                  .then((_) => _loadUnreadNotificationCount());
+            },
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -312,11 +327,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return [const SizedBox(height: 120, child: Center(child: Text('대시보드')))];
     }
     if (hasNotices) {
-      final noticeCount = _recentNotices!.length;
-      final displayCount = noticeCount > 3 ? 3 : noticeCount;
+      final notices = _recentNotices!;
+      final noticeCount = notices.length;
+      final pages = <List<Article>>[];
+      for (var i = 0; i < noticeCount; i += 3) {
+        final end = (i + 3 < noticeCount) ? i + 3 : noticeCount;
+        pages.add(notices.sublist(i, end));
+      }
+
       sections.add(
         DashboardSectionHeader(
-          title: '새 공지 $displayCount건',
+          title: '새 공지 ${noticeCount}건',
           onSeeAllTap: () {
             Navigator.of(context).push(
               SwipeablePageRoute<void>(
@@ -327,28 +348,82 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
         ),
       );
-      for (final article in _recentNotices!.take(3)) {
-        sections.add(
-          DashboardNoticeTile(
-            article: article,
-            onTap: () {
-              Navigator.of(context).push(
-                SwipeablePageRoute<void>(
-                  builder: (_) => ArticleDetailScreen(
-                    articleSeq: article.articleSeq,
-                    repository: widget.noticeRepository,
+
+      sections.add(
+        SizedBox(
+          height: 230,
+          child: Column(
+            children: [
+              Expanded(
+                child: PageView.builder(
+                  controller: _noticePageController,
+                  itemCount: pages.length,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentNoticePage = index;
+                    });
+                  },
+                  itemBuilder: (context, pageIndex) {
+                    final pageArticles = pages[pageIndex];
+                    return Column(
+                      children: [
+                        for (final article in pageArticles)
+                          DashboardNoticeTile(
+                            article: article,
+                            onTap: () {
+                              Navigator.of(context).push(
+                                SwipeablePageRoute<void>(
+                                  builder: (_) => ArticleDetailScreen(
+                                    articleSeq: article.articleSeq,
+                                    repository: widget.noticeRepository,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              if (pages.length > 1)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    pages.length,
+                    (index) => Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 3,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: index == _currentNoticePage
+                            ? tossBlue
+                            : Colors.grey.shade300,
+                      ),
+                    ),
                   ),
                 ),
-              );
-            },
+            ],
           ),
-        );
-      }
+        ),
+      );
     }
     if (hasFutureSchedules) {
+      final schedules = _futureWeekschedules!;
+      final total = schedules.length;
+      final pages = <List<WeekScheduleRow>>[];
+      for (var i = 0; i < total; i += 3) {
+        final end = (i + 3 < total) ? i + 3 : total;
+        pages.add(schedules.sublist(i, end));
+      }
+
       sections.add(
         DashboardSectionHeader(
-          title: '다가오는 행사 ${_futureWeekschedules!.length}건',
+          title: '다가오는 행사 ${total}건',
           onSeeAllTap: () {
             Navigator.of(context).push(
               SwipeablePageRoute<void>(
@@ -360,26 +435,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
         ),
       );
+
       final todayStr = _dateOnlyFormat.format(DateTime.now());
-      for (final row in _futureWeekschedules!) {
-        sections.add(
-          DashboardWeekscheduleTile(
-            row: row,
-            isToday: row.date == todayStr,
-            onPlaceTap: openNaverMap,
-            onEventTap: (articleSeq) {
-              Navigator.of(context).push(
-                SwipeablePageRoute<void>(
-                  builder: (_) => ArticleDetailScreen(
-                    articleSeq: articleSeq,
-                    repository: widget.noticeRepository,
+
+      sections.add(
+        SizedBox(
+          height: 245,
+          child: Column(
+            children: [
+              Expanded(
+                child: PageView.builder(
+                  controller: _weekschedulePageController,
+                  itemCount: pages.length,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentWeekschedulePage = index;
+                    });
+                  },
+                  itemBuilder: (context, pageIndex) {
+                    final pageRows = pages[pageIndex];
+                    return Column(
+                      children: [
+                        for (final row in pageRows)
+                          DashboardWeekscheduleTile(
+                            row: row,
+                            isToday: row.date == todayStr,
+                            onPlaceTap: openNaverMap,
+                            onEventTap: (_) {
+                              Navigator.of(context).push(
+                                SwipeablePageRoute<void>(
+                                  builder: (_) => WeekscheduleListScreen(
+                                    repository: widget.weekscheduleRepository,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              if (pages.length > 1)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    pages.length,
+                    (index) => Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 3,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: index == _currentWeekschedulePage
+                            ? tossBlue
+                            : Colors.grey.shade300,
+                      ),
+                    ),
                   ),
                 ),
-              );
-            },
+            ],
           ),
-        );
-      }
+        ),
+      );
     }
     if (hasNewsletter) {
       sections.add(

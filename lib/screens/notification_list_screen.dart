@@ -155,18 +155,20 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                                     entry.article.type,
                                   ),
                                 ),
-                                Positioned(
-                                  top: 4,
-                                  left: 8,
-                                  child: Badge(
-                                    backgroundColor: entry.isRead
-                                        ? Colors.grey.shade400
-                                        : tossBlue,
-                                    label: Text(
-                                      entry.isRead ? '읽음' : '읽지 않음',
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.white,
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: Badge(
+                                      backgroundColor: entry.isRead
+                                          ? Colors.grey.shade400
+                                          : tossBlue,
+                                      label: Text(
+                                        entry.isRead ? '읽음' : '읽지 않음',
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
                                   ),

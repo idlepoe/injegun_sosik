@@ -41,7 +41,7 @@ class DashboardNoticeTile extends StatelessWidget {
                 children: [
                   Text(
                     article.title,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 12,
