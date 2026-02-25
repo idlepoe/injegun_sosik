@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -16,6 +18,7 @@ import '../repository/newsletter_repository.dart';
 import '../repository/notice_repository.dart';
 import '../repository/weekschedule_repository.dart';
 import '../repository/weather_repository.dart';
+import '../services/fcm_service.dart';
 import '../utils/map_launcher.dart';
 import '../utils/toast_utils.dart';
 import '../widgets/dashboard_drawer.dart';
@@ -71,6 +74,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<WeekScheduleRow>? _futureWeekschedules;
   bool _isLoadingDashboard = true;
 
+  int _unreadNotificationCount = 0;
+
   static final _dateOnlyFormat = DateFormat('yyyy-MM-dd');
 
   /// 오늘 기준 7일 전 "YYYY-MM-DD"
@@ -84,6 +89,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadWeather();
     _loadDashboard();
+    _loadUnreadNotificationCount();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkPendingArticleSeq());
   }
 
@@ -106,7 +112,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   /// 날씨 + 행사/공지/소식지 전체 새로고침 (RefreshIndicator용)
   Future<void> _refreshAll() async {
-    await Future.wait([_loadWeather(), _loadDashboard()]);
+    await Future.wait([_loadWeather(), _loadDashboard(), _loadUnreadNotificationCount()]);
+  }
+
+  Future<void> _loadUnreadNotificationCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList = prefs.getString(keyPushNotificationList);
+    int count = 0;
+    if (jsonList != null && jsonList.isNotEmpty) {
+      try {
+        final list = jsonDecode(jsonList) as List<dynamic>;
+        for (final e in list) {
+          final map = e as Map<String, dynamic>;
+          final isRead = map['isRead'] as bool? ?? false;
+          if (!isRead) {
+            count++;
+          }
+        }
+      } catch (_) {}
+    }
+    if (mounted) {
+      setState(() {
+        _unreadNotificationCount = count;
+      });
+    }
   }
 
   Future<void> _loadDashboard() async {
@@ -196,20 +225,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         title: const Text('인제군 소식'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              Navigator.of(context).push(
-                SwipeablePageRoute<void>(
-                  builder: (_) => NotificationListScreen(
-                    noticeRepository: widget.noticeRepository,
-                    freeRepository: widget.freeRepository,
-                    jobRepository: widget.jobRepository,
-                    livelihoodRepository: widget.livelihoodRepository,
-                  ),
-                ),
-              );
-            },
+          Badge.count(
+            count: _unreadNotificationCount,
+            isLabelVisible: _unreadNotificationCount > 0,
+            child: IconButton(
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () {
+                Navigator.of(context)
+                    .push(
+                      SwipeablePageRoute<void>(
+                        builder: (_) => NotificationListScreen(
+                          noticeRepository: widget.noticeRepository,
+                          freeRepository: widget.freeRepository,
+                          jobRepository: widget.jobRepository,
+                          livelihoodRepository: widget.livelihoodRepository,
+                        ),
+                      ),
+                    )
+                    .then((_) => _loadUnreadNotificationCount());
+              },
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),

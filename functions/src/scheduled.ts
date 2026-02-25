@@ -9,6 +9,7 @@ import { fetchFree } from "./models/fetchFree.js";
 import { fetchNotice } from "./models/fetchNotice.js";
 import { fetchNewsletters } from "./models/fetchNewsletters.js";
 import { fetchDashboardSlider } from "./models/fetchDashboardSlider.js";
+import { sendPushForArticlesUpdatedInLastHour } from "./pushArticleByTopic.js";
 
 const OPT = { maxListPages: 1 } as const;
 
@@ -22,7 +23,12 @@ async function runFetchEveryThreeHours(): Promise<{ success: boolean; error?: st
     await fetchFree(OPT);
     await fetchNotice(OPT);
     logger.info("runFetchEveryThreeHours: fetch done");
-    // TODO: 토픽별 새 글 건수 조회 및 최신 글 정보로 FCM 토픽 푸시
+    try {
+      await sendPushForArticlesUpdatedInLastHour();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error("runFetchEveryThreeHours: push failed (non-fatal)", { error: msg });
+    }
     return { success: true };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

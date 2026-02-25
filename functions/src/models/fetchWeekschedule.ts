@@ -6,7 +6,7 @@ import {
   install,
 } from "@puppeteer/browsers";
 import * as cheerio from "cheerio";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -628,7 +628,10 @@ export async function fetchWeekschedule(options?: { maxListPages?: number }): Pr
 
         await articlesRef
           .doc(row.articleSeq)
-          .set(removeUndefined(article as unknown as Record<string, unknown>), { merge: true });
+          .set(
+            { ...removeUndefined(article as unknown as Record<string, unknown>), updatedAt: Timestamp.now() },
+            { merge: true }
+          );
         articlesCount++;
         logger.info("[fetchWeekschedule] Article saved", {
           articleSeq: row.articleSeq,
@@ -669,7 +672,7 @@ export async function fetchWeekschedule(options?: { maxListPages?: number }): Pr
                   skippedEmptyEventContent++;
                   continue;
                 }
-                await weekschedulesRef.add(scheduleRow);
+                await weekschedulesRef.add({ ...scheduleRow, updatedAt: Timestamp.now() });
                 weekschedulesCount++;
               }
               if (skippedEmptyEventContent > 0) {

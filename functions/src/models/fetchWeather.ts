@@ -1,4 +1,4 @@
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
 import type { FetchWeatherOptions, WeatherData } from "../types/weather.js";
 
@@ -158,6 +158,7 @@ export async function fetchWeather(
       ...weatherData,
       fetchedAt: new Date(),
       fetchedTimestamp: timestamp,
+      updatedAt: Timestamp.now(),
     };
 
     await weatherRef.set(docData, { merge: true });

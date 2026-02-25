@@ -55,10 +55,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
           final isRead = map['isRead'] as bool? ?? false;
           if (articleMap != null) {
             try {
-              items.add((
-                article: Article.fromMap(articleMap),
-                isRead: isRead,
-              ));
+              items.add((article: Article.fromMap(articleMap), isRead: isRead));
             } catch (_) {}
           }
         }
@@ -93,16 +90,13 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
     if (_items.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
     // 저장 형식은 append 순서(오래된 것 먼저) 유지
-    final updated = _items
-        .reversed
+    final updated = _items.reversed
         .map((e) => {'article': e.article.toMap(), 'isRead': true})
         .toList();
     await prefs.setString(keyPushNotificationList, jsonEncode(updated));
     if (mounted) {
       setState(() {
-        _items = [
-          for (final e in _items) (article: e.article, isRead: true),
-        ];
+        _items = [for (final e in _items) (article: e.article, isRead: true)];
       });
     }
   }
@@ -131,18 +125,49 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _items.isEmpty
-              ? const Center(child: Text('알림이 없습니다.'))
-              : ListView.builder(
-                  itemCount: _items.length,
-                  itemBuilder: (context, index) {
-                    final entry = _items[index];
-                    return ArticleListTile(
-                      article: entry.article,
-                      repository: _repositoryForType(entry.article.type),
-                    );
-                  },
-                ),
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: _items.isEmpty
+                  ? const SingleChildScrollView(
+                      physics: AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: 400,
+                        child: Center(child: Text('알림이 없습니다.')),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _items.length,
+                      itemBuilder: (context, index) {
+                        final entry = _items[index];
+                        return Stack(
+                          children: [
+                            ArticleListTile(
+                              article: entry.article,
+                              repository: _repositoryForType(
+                                entry.article.type,
+                              ),
+                            ),
+                            Positioned(
+                              top: 4,
+                              left: 8,
+                              child: Badge(
+                                backgroundColor: entry.isRead
+                                    ? Colors.grey.shade400
+                                    : tossBlue,
+                                label: Text(
+                                  entry.isRead ? '읽음' : '읽지 않음',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+            ),
     );
   }
 }

@@ -6,7 +6,7 @@ import {
   install,
 } from "@puppeteer/browsers";
 import * as cheerio from "cheerio";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -326,7 +326,10 @@ export async function fetchFree(options?: { maxListPages?: number }): Promise<{
 
         await articlesRef
           .doc(row.articleSeq)
-          .set(removeUndefined(article as unknown as Record<string, unknown>), { merge: true });
+          .set(
+            { ...removeUndefined(article as unknown as Record<string, unknown>), updatedAt: Timestamp.now() },
+            { merge: true }
+          );
         articlesCount++;
         logger.info("[fetchFree] Article saved", {
           articleSeq: row.articleSeq,
