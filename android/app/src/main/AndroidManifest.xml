@@ -6,8 +6,6 @@
         android:label="인제군 소식"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
-        <meta-data android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyBATVuUvsXVsHBGy2N-eVwwD-bA7kjFAjc" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

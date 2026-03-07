@@ -8,6 +8,7 @@ import {
 import * as cheerio from "cheerio";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
+import { defineString } from "firebase-functions/params";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import puppeteer, { type Browser, type Page } from "puppeteer";
@@ -25,7 +26,7 @@ const USER_AGENT =
 
 const CHROME_BUILD_ID = "131.0.6778.204";
 
-const GOOGLE_GEOCODING_API_KEY = "AIzaSyBATVuUvsXVsHBGy2N-eVwwD-bA7kjFAjc";
+const googleGeocodingApiKeyParam = defineString("GOOGLE_GEOCODING_API_KEY");
 const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 
 /**
@@ -382,10 +383,15 @@ async function geocodePlace(place: string): Promise<{ lat: number; lng: number }
   }
 
   try {
+    const apiKey = googleGeocodingApiKeyParam.value();
+    if (!apiKey) {
+      logger.warn("[fetchWeekschedule] GOOGLE_GEOCODING_API_KEY not set, skipping geocode", { place });
+      return null;
+    }
     const encodedPlace = encodeURIComponent(place.trim());
-    const url = `${GOOGLE_GEOCODING_API_URL}?address=${encodedPlace}&key=${GOOGLE_GEOCODING_API_KEY}&language=ko`;
-    
-    logger.info("[fetchWeekschedule] Geocoding request", { place, url: url.replace(GOOGLE_GEOCODING_API_KEY, "***") });
+    const url = `${GOOGLE_GEOCODING_API_URL}?address=${encodedPlace}&key=${apiKey}&language=ko`;
+
+    logger.info("[fetchWeekschedule] Geocoding request", { place, url: url.replace(apiKey, "***") });
 
     const response = await fetch(url);
     
