@@ -127,10 +127,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// 날씨 + 행사/공지/소식지 전체 새로고침 (RefreshIndicator용)
-  Future<void> _refreshAll() async {
-    await _loadWeather();
-    await _loadDashboard();
-    await _loadUnreadNotificationCount();
+  Future<void> _refreshAll() {
+    return Future.wait<void>([
+      _loadWeather(),
+      _loadDashboard(),
+      _loadUnreadNotificationCount(),
+    ]);
   }
 
   Future<void> _loadUnreadNotificationCount() async {
