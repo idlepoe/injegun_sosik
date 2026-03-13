@@ -1,5 +1,5 @@
-import puppeteer from "puppeteer";
 import * as logger from "firebase-functions/logger";
+import { setupBrowser } from "../types/browser";
 
 interface CgvApiResponse {
   [key: string]: unknown;
@@ -36,7 +36,7 @@ function getSeoulToday(): Date {
 }
 
 export async function fetchCgvScreenInfoWeek(): Promise<FetchCgvScreenInfoResult> {
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await setupBrowser();
 
   try {
     const page = await browser.newPage();
@@ -52,28 +52,43 @@ export async function fetchCgvScreenInfoWeek(): Promise<FetchCgvScreenInfoResult
     const items: DailyCgvScreenInfo[] = [];
 
     for (const scnYmd of dates) {
-      const data = await page.evaluate(async ({ apiBaseUrl, coCd, siteNo, rtctlScopCd, targetDate }) => {
-        const url = `${apiBaseUrl}?coCd=${coCd}&siteNo=${siteNo}&scnYmd=${targetDate}&rtctlScopCd=${rtctlScopCd}`;
+      const data = await page.evaluate(
+        async ({
+          apiBaseUrl,
+          coCd,
+          siteNo,
+          rtctlScopCd,
+          targetDate,
+        }: {
+          apiBaseUrl: string;
+          coCd: string;
+          siteNo: string;
+          rtctlScopCd: string;
+          targetDate: string;
+        }) => {
+          const url = `${apiBaseUrl}?coCd=${coCd}&siteNo=${siteNo}&scnYmd=${targetDate}&rtctlScopCd=${rtctlScopCd}`;
 
-        const res = await fetch(url, {
-          method: "GET",
-          headers: {
-            accept: "application/json",
-          },
-        });
+          const res = await fetch(url, {
+            method: "GET",
+            headers: {
+              accept: "application/json",
+            },
+          });
 
-        if (!res.ok) {
-          throw new Error(`CGV API request failed: ${res.status} ${res.statusText}`);
-        }
+          if (!res.ok) {
+            throw new Error(`CGV API request failed: ${res.status} ${res.statusText}`);
+          }
 
-        return res.json();
-      }, {
-        apiBaseUrl: CGV_API_BASE_URL,
-        coCd: CO_CD,
-        siteNo: SITE_NO,
-        rtctlScopCd: RTCTL_SCOP_CD,
-        targetDate: scnYmd,
-      });
+          return res.json();
+        },
+        {
+          apiBaseUrl: CGV_API_BASE_URL,
+          coCd: CO_CD,
+          siteNo: SITE_NO,
+          rtctlScopCd: RTCTL_SCOP_CD,
+          targetDate: scnYmd,
+        },
+      );
 
       items.push({ scnYmd, data: data as CgvApiResponse });
     }
