@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 import 'package:swipeable_page_route/swipeable_page_route.dart';
 import 'package:upgrader/upgrader.dart';
 
@@ -593,26 +592,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildLoadingSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Skeletonizer(
-        enabled: true,
-        child: Column(
-          children: List.generate(
-            3,
-            (_) => Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 8),
-              child: Card(
-                child: ListTile(
-                  title: Text('로딩 중인 항목 제목입니다'),
-                  subtitle: Text('로딩 중인 항목 설명입니다'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return SizedBox(
+      height: 120,
+      child: Center(child: CircularProgressIndicator(color: tossBlue)),
     );
   }
 }
