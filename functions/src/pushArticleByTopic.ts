@@ -29,12 +29,38 @@ interface ArticleDoc {
 
 const MAX_CONTENT_LENGTH = 150;
 
+const HTML_ENTITY_MAP: Record<string, string> = {
+  nbsp: " ",
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+};
+
+function decodeHtmlEntities(text: string): string {
+  return text.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, (entity, code) => {
+    const normalizedCode = String(code);
+    if (normalizedCode.startsWith("#x") || normalizedCode.startsWith("#X")) {
+      const parsed = Number.parseInt(normalizedCode.slice(2), 16);
+      return Number.isNaN(parsed) ? entity : String.fromCodePoint(parsed);
+    }
+    if (normalizedCode.startsWith("#")) {
+      const parsed = Number.parseInt(normalizedCode.slice(1), 10);
+      return Number.isNaN(parsed) ? entity : String.fromCodePoint(parsed);
+    }
+
+    return HTML_ENTITY_MAP[normalizedCode.toLowerCase()] ?? entity;
+  });
+}
+
 /**
  * HTML 태그 제거 후 150자 이내로 자른 본문
  */
 function stripHtmlAndTruncate(html: string | undefined, maxLen: number = MAX_CONTENT_LENGTH): string {
   if (!html || !html.trim()) return "";
-  const stripped = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const decoded = decodeHtmlEntities(html);
+  const stripped = decoded.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
   if (stripped.length <= maxLen) return stripped;
   return stripped.slice(0, maxLen);
 }
