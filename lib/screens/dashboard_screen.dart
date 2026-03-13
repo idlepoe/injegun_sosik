@@ -69,9 +69,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   DateTime? _lastBackPress;
 
   List<Article>? _recentNotices;
+  bool _isLoadingNotices = true;
   Newsletter? _latestNewsletter;
+  bool _isLoadingNewsletter = true;
   List<WeekScheduleRow>? _futureWeekschedules;
-  bool _isLoadingDashboard = true;
+  bool _isLoadingWeekschedules = true;
 
   int _unreadNotificationCount = 0;
 
@@ -125,8 +127,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// 날씨 + 행사/공지/소식지 전체 새로고침 (RefreshIndicator용)
-  Future<void> _refreshAll() async {
-    await Future.wait([_loadWeather(), _loadDashboard(), _loadUnreadNotificationCount()]);
+  Future<void> _refreshAll() {
+    return Future.wait<void>([
+      _loadWeather(),
+      _loadDashboard(),
+      _loadUnreadNotificationCount(),
+    ]);
   }
 
   Future<void> _loadUnreadNotificationCount() async {
@@ -159,31 +165,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final endDate = now.add(const Duration(days: 60));
     final endStr = _dateOnlyFormat.format(endDate);
 
-    List<Article>? notices;
-    Newsletter? newsletter;
-    List<WeekScheduleRow>? futureSchedules;
+    if (mounted) {
+      setState(() {
+        _isLoadingNotices = true;
+        _isLoadingNewsletter = true;
+        _isLoadingWeekschedules = true;
+        _recentNotices = null;
+        _latestNewsletter = null;
+        _futureWeekschedules = null;
+      });
+    }
+
+    List<Article> notices = [];
     try {
       final result = await widget.noticeRepository.getPage(pageSize: 50);
       notices = result.items
           .where((a) => a.registeredAt.compareTo(sinceStr) >= 0)
           .toList();
     } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        _recentNotices = notices;
+        _isLoadingNotices = false;
+      });
+    }
+
+    Newsletter? newsletter;
     try {
       final list = await widget.newsletterRepository.getPage(pageSize: 1);
       newsletter = list.isNotEmpty ? list.first : null;
     } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        _latestNewsletter = newsletter;
+        _isLoadingNewsletter = false;
+      });
+    }
+
+    List<WeekScheduleRow> futureSchedules = [];
     try {
       futureSchedules = await widget.weekscheduleRepository.getRowsInDateRange(
         todayStr,
         endStr,
       );
     } catch (_) {}
+
     if (mounted) {
       setState(() {
-        _recentNotices = notices ?? [];
-        _latestNewsletter = newsletter;
-        _futureWeekschedules = futureSchedules ?? [];
-        _isLoadingDashboard = false;
+        _futureWeekschedules = futureSchedules;
+        _isLoadingWeekschedules = false;
       });
     }
   }
@@ -309,22 +341,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final sections = <Widget>[
       const DashboardSliderBanner(),
     ];
-    if (_isLoadingDashboard) {
-      sections.add(
-        SizedBox(
-          height: 120,
-          child: Center(child: CircularProgressIndicator(color: tossBlue)),
-        ),
-      );
-      return sections;
-    }
+
     final hasNotices = _recentNotices != null && _recentNotices!.isNotEmpty;
     final hasNewsletter = _latestNewsletter != null;
     final hasFutureSchedules =
         _futureWeekschedules != null && _futureWeekschedules!.isNotEmpty;
-    if (!hasNotices && !hasNewsletter && !hasFutureSchedules) {
-      return [const SizedBox(height: 120, child: Center(child: Text('대시보드')))];
+
+    if (_isLoadingNotices) {
+      sections.add(_buildLoadingSection());
+      return sections;
     }
+
     if (hasNotices) {
       final notices = _recentNotices!;
       final noticeCount = notices.length;
@@ -411,6 +438,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       );
     }
+
+    if (_isLoadingNewsletter) {
+      sections.add(_buildLoadingSection());
+      return sections;
+    }
+
+    if (hasNewsletter) {
+      sections.add(
+        DashboardSectionHeader(
+          title: '최신 합강소식지',
+          onSeeAllTap: () {
+            Navigator.of(context).push(
+              SwipeablePageRoute<void>(
+                builder: (_) => NewsletterListScreen(
+                  repository: widget.newsletterRepository,
+                ),
+              ),
+            );
+          },
+        ),
+      );
+      final newsletter = _latestNewsletter!;
+      final hasPdf =
+          newsletter.pdfStorageUrl != null &&
+          newsletter.pdfStorageUrl!.isNotEmpty;
+      sections.add(
+        DashboardNewsletterTile(
+          newsletter: newsletter,
+          onTap: () {
+            if (hasPdf) {
+              Navigator.of(context).push(
+                SwipeablePageRoute<void>(
+                  builder: (_) => PdfViewerScreen(
+                    pdfUrl: newsletter.pdfStorageUrl!,
+                    title: newsletter.title,
+                  ),
+                ),
+              );
+            } else {
+              Navigator.of(context).push(
+                SwipeablePageRoute<void>(
+                  builder: (_) => NewsletterListScreen(
+                    repository: widget.newsletterRepository,
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+      );
+    }
+
+    if (_isLoadingWeekschedules) {
+      sections.add(_buildLoadingSection());
+      return sections;
+    }
+
+    if (!hasNotices && !hasNewsletter && !hasFutureSchedules) {
+      return [const SizedBox(height: 120, child: Center(child: Text('대시보드')))];
+    }
+
     if (hasFutureSchedules) {
       final schedules = _futureWeekschedules!;
       final total = schedules.length;
@@ -500,51 +588,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       );
     }
-    if (hasNewsletter) {
-      sections.add(
-        DashboardSectionHeader(
-          title: '최신 합강소식지',
-          onSeeAllTap: () {
-            Navigator.of(context).push(
-              SwipeablePageRoute<void>(
-                builder: (_) => NewsletterListScreen(
-                  repository: widget.newsletterRepository,
-                ),
-              ),
-            );
-          },
-        ),
-      );
-      final newsletter = _latestNewsletter!;
-      final hasPdf =
-          newsletter.pdfStorageUrl != null &&
-          newsletter.pdfStorageUrl!.isNotEmpty;
-      sections.add(
-        DashboardNewsletterTile(
-          newsletter: newsletter,
-          onTap: () {
-            if (hasPdf) {
-              Navigator.of(context).push(
-                SwipeablePageRoute<void>(
-                  builder: (_) => PdfViewerScreen(
-                    pdfUrl: newsletter.pdfStorageUrl!,
-                    title: newsletter.title,
-                  ),
-                ),
-              );
-            } else {
-              Navigator.of(context).push(
-                SwipeablePageRoute<void>(
-                  builder: (_) => NewsletterListScreen(
-                    repository: widget.newsletterRepository,
-                  ),
-                ),
-              );
-            }
-          },
-        ),
-      );
-    }
     return sections;
+  }
+
+  Widget _buildLoadingSection() {
+    return SizedBox(
+      height: 120,
+      child: Center(child: CircularProgressIndicator(color: tossBlue)),
+    );
   }
 }
