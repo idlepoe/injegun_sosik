@@ -439,57 +439,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
-    if (_isLoadingNewsletter) {
-      sections.add(_buildLoadingSection());
-      return sections;
-    }
-
-    if (hasNewsletter) {
-      sections.add(
-        DashboardSectionHeader(
-          title: '최신 합강소식지',
-          onSeeAllTap: () {
-            Navigator.of(context).push(
-              SwipeablePageRoute<void>(
-                builder: (_) => NewsletterListScreen(
-                  repository: widget.newsletterRepository,
-                ),
-              ),
-            );
-          },
-        ),
-      );
-      final newsletter = _latestNewsletter!;
-      final hasPdf =
-          newsletter.pdfStorageUrl != null &&
-          newsletter.pdfStorageUrl!.isNotEmpty;
-      sections.add(
-        DashboardNewsletterTile(
-          newsletter: newsletter,
-          onTap: () {
-            if (hasPdf) {
-              Navigator.of(context).push(
-                SwipeablePageRoute<void>(
-                  builder: (_) => PdfViewerScreen(
-                    pdfUrl: newsletter.pdfStorageUrl!,
-                    title: newsletter.title,
-                  ),
-                ),
-              );
-            } else {
-              Navigator.of(context).push(
-                SwipeablePageRoute<void>(
-                  builder: (_) => NewsletterListScreen(
-                    repository: widget.newsletterRepository,
-                  ),
-                ),
-              );
-            }
-          },
-        ),
-      );
-    }
-
     if (_isLoadingWeekschedules) {
       sections.add(_buildLoadingSection());
       return sections;
@@ -585,6 +534,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
             ],
           ),
+        ),
+      );
+    }
+
+    if (_isLoadingNewsletter) {
+      sections.add(_buildLoadingSection());
+      return sections;
+    }
+
+    if (hasNewsletter) {
+      sections.add(
+        DashboardSectionHeader(
+          title: '최신 합강소식지',
+          onSeeAllTap: () {
+            Navigator.of(context).push(
+              SwipeablePageRoute<void>(
+                builder: (_) => NewsletterListScreen(
+                  repository: widget.newsletterRepository,
+                ),
+              ),
+            );
+          },
+        ),
+      );
+      final newsletter = _latestNewsletter!;
+      final hasPdf =
+          newsletter.pdfStorageUrl != null &&
+          newsletter.pdfStorageUrl!.isNotEmpty;
+      sections.add(
+        DashboardNewsletterTile(
+          newsletter: newsletter,
+          onTap: () {
+            if (hasPdf) {
+              Navigator.of(context).push(
+                SwipeablePageRoute<void>(
+                  builder: (_) => PdfViewerScreen(
+                    pdfUrl: newsletter.pdfStorageUrl!,
+                    title: newsletter.title,
+                  ),
+                ),
+              );
+            } else {
+              Navigator.of(context).push(
+                SwipeablePageRoute<void>(
+                  builder: (_) => NewsletterListScreen(
+                    repository: widget.newsletterRepository,
+                  ),
+                ),
+              );
+            }
+          },
         ),
       );
     }
