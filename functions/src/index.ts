@@ -19,6 +19,7 @@ import { fetchJob } from "./models/fetchJob.js";
 import { fetchLivelihood } from "./models/fetchLivelihood.js";
 import { fetchFree } from "./models/fetchFree.js";
 import { fetchDashboardSlider } from "./models/fetchDashboardSlider.js";
+import { fetchCgvScreenInfoWeek } from "./models/fetchCgvScreenInfo.js";
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -208,6 +209,28 @@ export const fetchDashboardSliderFn = onRequest(
       res.status(200).json(result);
     } catch (err) {
       logger.error("fetchDashboardSlider failed", err);
+      res.status(500).json({ error: (err as Error).message });
+    }
+  }
+);
+
+/**
+ * CGV 상영정보 API 조회: 오늘(Asia/Seoul)부터 7일치 데이터를 가져옴
+ * GET 호출.
+ */
+export const fetchCgvScreenInfoWeekFn = onRequest(
+  { region: "asia-northeast3", maxInstances: 3, memory: "1GiB", timeoutSeconds: 300 },
+  async (req, res) => {
+    if (req.method !== "GET") {
+      res.status(405).set("Allow", "GET").send("Method Not Allowed");
+      return;
+    }
+    try {
+      const result = await fetchCgvScreenInfoWeek();
+      logger.info("fetchCgvScreenInfoWeek completed", { days: result.days });
+      res.status(200).json(result);
+    } catch (err) {
+      logger.error("fetchCgvScreenInfoWeek failed", err);
       res.status(500).json({ error: (err as Error).message });
     }
   }
