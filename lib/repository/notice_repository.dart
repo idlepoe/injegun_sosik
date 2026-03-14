@@ -19,9 +19,11 @@ class NoticeRepository implements ArticleRepository {
 
   /// pageSize개 조회. startAfter 있으면 그 다음부터.
   /// 정렬: registeredAt 내림차순 (최신순)
+  /// getOptions: 캐시 우선 등 소스 지정 시 사용 (미지정 시 서버·캐시 기본)
   Future<NoticePageResult> getPage({
     int pageSize = 20,
     DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    GetOptions? getOptions,
   }) async {
     var query = _firestore
         .collection('articles')
@@ -31,7 +33,7 @@ class NoticeRepository implements ArticleRepository {
     if (startAfter != null) {
       query = query.startAfterDocument(startAfter);
     }
-    final snapshot = await query.get();
+    final snapshot = await query.get(getOptions ?? const GetOptions());
     final docs = snapshot.docs;
     final items = docs.map((doc) => Article.fromFirestore(doc)).toList();
     final lastDoc = docs.isEmpty ? null : docs.last;

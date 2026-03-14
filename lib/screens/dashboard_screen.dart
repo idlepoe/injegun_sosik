@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -94,11 +96,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return _dateOnlyFormat.format(d);
   }
 
+  static const bool _kDashboardLoadLogging = kDebugMode;
+
   @override
   void initState() {
     super.initState();
     _noticePageController = PageController();
     _weekschedulePageController = PageController();
+    if (_kDashboardLoadLogging) debugPrint('[Dashboard] initState: start load');
     _loadWeather();
     _loadDashboard();
     _loadUnreadNotificationCount();
@@ -139,6 +144,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadUnreadNotificationCount() async {
+    final stopwatch = _kDashboardLoadLogging ? (Stopwatch()..start()) : null;
     final prefs = await SharedPreferences.getInstance();
     final jsonList = prefs.getString(keyPushNotificationList);
     int count = 0;
@@ -159,9 +165,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _unreadNotificationCount = count;
       });
     }
+    if (_kDashboardLoadLogging && stopwatch != null) {
+      stopwatch.stop();
+      debugPrint('[Dashboard] fetch unreadCount: ${stopwatch.elapsedMilliseconds}ms, count=$count');
+    }
   }
 
+  static const _cacheOptions = GetOptions(source: Source.cache);
+
   Future<void> _loadDashboard() async {
+    final totalStopwatch = _kDashboardLoadLogging ? (Stopwatch()..start()) : null;
     final sinceStr = sevenDaysAgo();
     final now = DateTime.now();
     final todayStr = _dateOnlyFormat.format(now);
@@ -179,53 +192,123 @@ class _DashboardScreenState extends State<DashboardScreen> {
       });
     }
 
-    List<Article> notices = [];
+    // 1단계: 캐시에서 먼저 읽어 빠른 첫 페인트
+    final cacheNoticesFuture = widget.noticeRepository
+        .getPage(pageSize: 15, getOptions: _cacheOptions)
+        .then((result) => result.items
+            .where((a) => a.registeredAt.compareTo(sinceStr) >= 0)
+            .toList())
+        .catchError((_) => <Article>[]);
+    final cacheNewsletterFuture = widget.newsletterRepository
+        .getPage(pageSize: 1, getOptions: _cacheOptions)
+        .then((list) => list.isNotEmpty ? list.first : null)
+        .catchError((_) => null);
+    final cacheSchedulesFuture = widget.weekscheduleRepository
+        .getRowsInDateRange(todayStr, endStr, getOptions: _cacheOptions)
+        .catchError((_) => <WeekScheduleRow>[]);
+
     try {
-      final result = await widget.noticeRepository.getPage(pageSize: 50);
-      notices = result.items
-          .where((a) => a.registeredAt.compareTo(sinceStr) >= 0)
-          .toList();
+      final cacheResults = await Future.wait([
+        cacheNoticesFuture,
+        cacheNewsletterFuture,
+        cacheSchedulesFuture,
+      ]);
+      final cacheNotices = cacheResults[0] as List<Article>;
+      final cacheNewsletter = cacheResults[1] as Newsletter?;
+      final cacheSchedules = cacheResults[2] as List<WeekScheduleRow>;
+      final hasAnyCache = cacheNotices.isNotEmpty ||
+          cacheNewsletter != null ||
+          cacheSchedules.isNotEmpty;
+      if (mounted && hasAnyCache) {
+        setState(() {
+          _recentNotices = cacheNotices;
+          _latestNewsletter = cacheNewsletter;
+          _futureWeekschedules = cacheSchedules;
+          _isLoadingNotices = false;
+          _isLoadingNewsletter = false;
+          _isLoadingWeekschedules = false;
+        });
+      }
     } catch (_) {}
 
+    // 2단계: 서버에서 최신 데이터로 갱신
+    final noticesFuture = widget.noticeRepository
+        .getPage(pageSize: 15)
+        .then((result) => result.items
+            .where((a) => a.registeredAt.compareTo(sinceStr) >= 0)
+            .toList())
+        .catchError((e) {
+      if (_kDashboardLoadLogging) debugPrint('[Dashboard] fetch notices error: $e');
+      return <Article>[];
+    });
+    final newsletterFuture = widget.newsletterRepository
+        .getPage(pageSize: 1)
+        .then((list) => list.isNotEmpty ? list.first : null)
+        .catchError((e) {
+      if (_kDashboardLoadLogging) debugPrint('[Dashboard] fetch newsletter error: $e');
+      return null;
+    });
+    final schedulesFuture = widget.weekscheduleRepository
+        .getRowsInDateRange(todayStr, endStr)
+        .catchError((e) {
+      if (_kDashboardLoadLogging) debugPrint('[Dashboard] fetch weekschedules error: $e');
+      return <WeekScheduleRow>[];
+    });
+
+    List<Article> notices;
+    Newsletter? newsletter;
+    List<WeekScheduleRow> futureSchedules;
+    try {
+      final results = await Future.wait([
+        noticesFuture,
+        newsletterFuture,
+        schedulesFuture,
+      ]);
+      notices = results[0] as List<Article>;
+      newsletter = results[1] as Newsletter?;
+      futureSchedules = results[2] as List<WeekScheduleRow>;
+    } catch (e) {
+      if (_kDashboardLoadLogging) debugPrint('[Dashboard] fetch dashboard wait error: $e');
+      notices = [];
+      newsletter = null;
+      futureSchedules = [];
+    }
+
+    if (_kDashboardLoadLogging && totalStopwatch != null) {
+      totalStopwatch.stop();
+      debugPrint('[Dashboard] fetch dashboard total: ${totalStopwatch.elapsedMilliseconds}ms, notices=${notices.length}, newsletter=${newsletter != null}, weekschedules=${futureSchedules.length}');
+    }
     if (mounted) {
       setState(() {
         _recentNotices = notices;
-        _isLoadingNotices = false;
-      });
-    }
-
-    Newsletter? newsletter;
-    try {
-      final list = await widget.newsletterRepository.getPage(pageSize: 1);
-      newsletter = list.isNotEmpty ? list.first : null;
-    } catch (_) {}
-
-    if (mounted) {
-      setState(() {
         _latestNewsletter = newsletter;
-        _isLoadingNewsletter = false;
-      });
-    }
-
-    List<WeekScheduleRow> futureSchedules = [];
-    try {
-      futureSchedules = await widget.weekscheduleRepository.getRowsInDateRange(
-        todayStr,
-        endStr,
-      );
-    } catch (_) {}
-
-    if (mounted) {
-      setState(() {
         _futureWeekschedules = futureSchedules;
+        _isLoadingNotices = false;
+        _isLoadingNewsletter = false;
         _isLoadingWeekschedules = false;
       });
     }
   }
 
   Future<void> _loadWeather() async {
+    final stopwatch = _kDashboardLoadLogging ? (Stopwatch()..start()) : null;
+    try {
+      final cacheWeather = await widget.weatherRepository
+          .getLatest(getOptions: _cacheOptions)
+          .catchError((_) => null);
+      if (mounted && cacheWeather != null) {
+        setState(() {
+          _weatherData = cacheWeather;
+          _isLoadingWeather = false;
+        });
+      }
+    } catch (_) {}
     try {
       final weather = await widget.weatherRepository.getLatest();
+      if (_kDashboardLoadLogging && stopwatch != null) {
+        stopwatch.stop();
+        debugPrint('[Dashboard] fetch weather: ${stopwatch.elapsedMilliseconds}ms, hasData=${weather != null}');
+      }
       if (mounted) {
         setState(() {
           _weatherData = weather;
@@ -233,6 +316,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       }
     } catch (e) {
+      if (_kDashboardLoadLogging && stopwatch != null) {
+        stopwatch.stop();
+        debugPrint('[Dashboard] fetch weather: ${stopwatch.elapsedMilliseconds}ms, error=$e');
+      }
       if (mounted) {
         setState(() {
           _isLoadingWeather = false;
@@ -354,6 +441,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (_isLoadingNotices) {
       sections.add(_buildLoadingSection());
+      if (_kDashboardLoadLogging) {
+        debugPrint('[Dashboard] sections displayed: slider, loading(notices)');
+      }
       return sections;
     }
 
@@ -446,10 +536,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (_isLoadingWeekschedules) {
       sections.add(_buildLoadingSection());
+      if (_kDashboardLoadLogging) {
+        final noticeCount = hasNotices ? _recentNotices!.length : 0;
+        debugPrint('[Dashboard] sections displayed: slider, notices=$noticeCount, loading(weekschedules)');
+      }
       return sections;
     }
 
     if (!hasNotices && !hasNewsletter && !hasFutureSchedules) {
+      if (_kDashboardLoadLogging) {
+        debugPrint('[Dashboard] sections displayed: slider, empty');
+      }
       return [const SizedBox(height: 120, child: Center(child: Text('대시보드')))];
     }
 
@@ -545,6 +642,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (_isLoadingNewsletter) {
       sections.add(_buildLoadingSection());
+      if (_kDashboardLoadLogging) {
+        final noticeCount = hasNotices ? _recentNotices!.length : 0;
+        final scheduleCount = hasFutureSchedules ? _futureWeekschedules!.length : 0;
+        debugPrint('[Dashboard] sections displayed: slider, notices=$noticeCount, weekschedules=$scheduleCount, loading(newsletter)');
+      }
       return sections;
     }
 
@@ -592,6 +694,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
         ),
       );
+    }
+    if (_kDashboardLoadLogging) {
+      final noticeCount = hasNotices ? _recentNotices!.length : 0;
+      final scheduleCount = hasFutureSchedules ? _futureWeekschedules!.length : 0;
+      debugPrint('[Dashboard] sections displayed: slider, notices=$noticeCount, weekschedules=$scheduleCount, newsletter=$hasNewsletter');
     }
     return sections;
   }
