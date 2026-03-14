@@ -7,6 +7,7 @@ import { fetchLivelihood } from "./models/fetchLivelihood.js";
 import { fetchJob } from "./models/fetchJob.js";
 import { fetchFree } from "./models/fetchFree.js";
 import { fetchNotice } from "./models/fetchNotice.js";
+import { fetchPraise } from "./models/fetchPraise.js";
 import { fetchNewsletters } from "./models/fetchNewsletters.js";
 import { fetchDashboardSlider } from "./models/fetchDashboardSlider.js";
 import { sendPushForArticlesUpdatedInLastHour } from "./pushArticleByTopic.js";
@@ -22,6 +23,7 @@ async function runFetchEveryThreeHours(): Promise<{ success: boolean; error?: st
     await fetchJob(OPT);
     await fetchFree(OPT);
     await fetchNotice(OPT);
+    await fetchPraise(OPT);
     logger.info("runFetchEveryThreeHours: fetch done");
     try {
       await sendPushForArticlesUpdatedInLastHour();

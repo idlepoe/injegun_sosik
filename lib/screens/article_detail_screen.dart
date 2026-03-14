@@ -138,7 +138,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           foregroundColor: Colors.grey.shade900,
           elevation: 0,
           title: Text(
-            '공지 상세',
+            _article?.title ?? '',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -159,7 +159,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           foregroundColor: Colors.grey.shade900,
           elevation: 0,
           title: Text(
-            '공지 상세',
+            _article?.title ?? '',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -185,7 +185,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           foregroundColor: Colors.grey.shade900,
           elevation: 0,
           title: Text(
-            '공지 상세',
+            "게시글을 찾을 수 없습니다.",
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -209,7 +209,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         foregroundColor: Colors.grey.shade900,
         elevation: 0,
         title: Text(
-          '공지 상세',
+          article.title,
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,

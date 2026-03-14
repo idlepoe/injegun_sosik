@@ -1,3 +1,4 @@
+import * as cheerio from "cheerio";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import * as logger from "firebase-functions/logger";
@@ -55,14 +56,17 @@ function decodeHtmlEntities(text: string): string {
 }
 
 /**
- * HTML 태그 제거 후 150자 이내로 자른 본문
+ * HTML을 파싱하여 텍스트만 추출 후 150자 이내로 자름 (푸시용 순수 텍스트)
  */
-function stripHtmlAndTruncate(html: string | undefined, maxLen: number = MAX_CONTENT_LENGTH): string {
+function htmlToText(html: string | undefined, maxLen: number = MAX_CONTENT_LENGTH): string {
   if (!html || !html.trim()) return "";
   const decoded = decodeHtmlEntities(html);
-  const stripped = decoded.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-  if (stripped.length <= maxLen) return stripped;
-  return stripped.slice(0, maxLen);
+  const $ = cheerio.load(decoded);
+  $("style, script").remove();
+  const text = ($("body").length ? $("body").text() : $.root().text()) ?? "";
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLen) return normalized;
+  return normalized.slice(0, maxLen);
 }
 
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
@@ -129,7 +133,7 @@ async function sendPushForType(type: ArticleType): Promise<void> {
     articles.length > 1
       ? `(${topicLabel}) ${articleTitle} 외 ${articles.length}건`
       : `(${topicLabel}) ${articleTitle}`;
-  const contentExcerpt = stripHtmlAndTruncate(latest.content);
+  const contentExcerpt = htmlToText(latest.content);
   const body = contentExcerpt || articleTitle || "새 글이 올라왔습니다.";
   const detailUrl = latest.url ?? "";
 

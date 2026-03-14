@@ -19,7 +19,7 @@ import { fetchJob } from "./models/fetchJob.js";
 import { fetchLivelihood } from "./models/fetchLivelihood.js";
 import { fetchFree } from "./models/fetchFree.js";
 import { fetchDashboardSlider } from "./models/fetchDashboardSlider.js";
-import { fetchCgvScreenInfoWeek } from "./models/fetchCgvScreenInfo.js";
+import { fetchPraise } from "./models/fetchPraise.js";
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -213,24 +213,25 @@ export const fetchDashboardSliderFn = onRequest(
     }
   }
 );
-
 /**
- * CGV 상영정보 API 조회: 오늘(Asia/Seoul)부터 7일치 데이터를 가져옴
- * GET 호출.
+ * 칭찬합시다 크롤링: 목록/상세를 articles 컬렉션에 저장 (type: 'praise')
+ * GET 호출. 쿼리: maxListPages (최대 목록 페이지 수, 기본 1)
+ * Puppeteer/Chrome 사용으로 메모리 1GB, 타임아웃 5분
  */
-export const fetchCgvScreenInfoWeekFn = onRequest(
-  { region: "asia-northeast3", maxInstances: 3, memory: "1GiB", timeoutSeconds: 300 },
+export const fetchPraiseFn = onRequest(
+  { region: "asia-northeast3", maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
   async (req, res) => {
     if (req.method !== "GET") {
       res.status(405).set("Allow", "GET").send("Method Not Allowed");
       return;
     }
+    const maxListPages = req.query.maxListPages ? Number(req.query.maxListPages) : 1;
     try {
-      const result = await fetchCgvScreenInfoWeek();
-      logger.info("fetchCgvScreenInfoWeek completed", { days: result.days });
+      const result = await fetchPraise({ maxListPages });
+      logger.info("fetchNotice completed", result);
       res.status(200).json(result);
     } catch (err) {
-      logger.error("fetchCgvScreenInfoWeek failed", err);
+      logger.error("fetchNotice failed", err);
       res.status(500).json({ error: (err as Error).message });
     }
   }
