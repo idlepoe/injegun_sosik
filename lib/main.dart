@@ -11,6 +11,7 @@ import 'repository/job_repository.dart';
 import 'repository/livelihood_repository.dart';
 import 'repository/newsletter_repository.dart';
 import 'repository/notice_repository.dart';
+import 'repository/praise_repository.dart';
 import 'repository/weekschedule_repository.dart';
 import 'repository/weather_repository.dart';
 import 'screens/dashboard_screen.dart';
@@ -28,6 +29,7 @@ void main() async {
   final weekscheduleRepository = WeekscheduleRepository();
   final newsletterRepository = NewsletterRepository();
   final noticeRepository = NoticeRepository();
+  final praiseRepository = PraiseRepository();
   final freeRepository = FreeRepository();
   final jobRepository = JobRepository();
   final livelihoodRepository = LivelihoodRepository();
@@ -37,6 +39,7 @@ void main() async {
     weekscheduleRepository: weekscheduleRepository,
     newsletterRepository: newsletterRepository,
     noticeRepository: noticeRepository,
+    praiseRepository: praiseRepository,
     freeRepository: freeRepository,
     jobRepository: jobRepository,
     livelihoodRepository: livelihoodRepository,
@@ -47,6 +50,7 @@ void main() async {
         weekscheduleRepository: weekscheduleRepository,
         newsletterRepository: newsletterRepository,
         noticeRepository: noticeRepository,
+        praiseRepository: praiseRepository,
         freeRepository: freeRepository,
         jobRepository: jobRepository,
         livelihoodRepository: livelihoodRepository,

@@ -27,6 +27,7 @@ class FcmService {
   /// 토픽 한글 라벨 매핑
   static const Map<String, String> _topicLabels = {
     'notice': '공지사항',
+    'praise': '칭찬합니다',
     'job': '구인구직',
     'livelihood': '생활장터',
     'free': '자유게시판',

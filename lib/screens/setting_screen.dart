@@ -15,6 +15,7 @@ class SettingScreen extends StatefulWidget {
 class _SettingScreenState extends State<SettingScreen> {
   static const List<({String topic, String label})> _topics = [
     (topic: 'notice', label: '공지사항'),
+    (topic: 'praise', label: '칭찬합니다'),
     (topic: 'job', label: '구인구직'),
     (topic: 'livelihood', label: '생활장터'),
     (topic: 'free', label: '자유게시판'),

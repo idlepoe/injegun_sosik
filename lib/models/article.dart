@@ -31,7 +31,7 @@ abstract class Attachment with _$Attachment {
 @freezed
 abstract class Article with _$Article {
   const factory Article({
-    /// 게시글 타입 ("weekschedule" | "notice")
+    /// 게시글 타입 ("weekschedule" | "notice" | "praise" | "job" | "livelihood" | "free")
     required String type,
     /// 상세 페이지 URL
     String? url,

@@ -7,12 +7,14 @@ import '../repository/job_repository.dart';
 import '../repository/livelihood_repository.dart';
 import '../repository/newsletter_repository.dart';
 import '../repository/notice_repository.dart';
+import '../repository/praise_repository.dart';
 import '../repository/weekschedule_repository.dart';
 import '../screens/free_list_screen.dart';
 import '../screens/job_list_screen.dart';
 import '../screens/livelihood_list_screen.dart';
 import '../screens/newsletter_list_screen.dart';
 import '../screens/notice_list_screen.dart';
+import '../screens/praise_list_screen.dart';
 import '../screens/weekschedule_list_screen.dart';
 import 'dashboard_style.dart';
 
@@ -23,6 +25,7 @@ class DashboardDrawer extends StatelessWidget {
     required this.weekscheduleRepository,
     required this.newsletterRepository,
     required this.noticeRepository,
+    required this.praiseRepository,
     required this.freeRepository,
     required this.jobRepository,
     required this.livelihoodRepository,
@@ -31,6 +34,7 @@ class DashboardDrawer extends StatelessWidget {
   final WeekscheduleRepository weekscheduleRepository;
   final NewsletterRepository newsletterRepository;
   final NoticeRepository noticeRepository;
+  final PraiseRepository praiseRepository;
   final FreeRepository freeRepository;
   final JobRepository jobRepository;
   final LivelihoodRepository livelihoodRepository;
@@ -83,6 +87,22 @@ class DashboardDrawer extends StatelessWidget {
                   SwipeablePageRoute<void>(
                     builder: (_) =>
                         NoticeListScreen(repository: noticeRepository),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.thumb_up, color: tossGreyText),
+              title: Text(
+                '칭찬합니다',
+                style: TextStyle(color: Colors.grey.shade800),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  SwipeablePageRoute<void>(
+                    builder: (_) =>
+                        PraiseListScreen(repository: praiseRepository),
                   ),
                 );
               },

@@ -16,6 +16,7 @@ import '../repository/job_repository.dart';
 import '../repository/livelihood_repository.dart';
 import '../repository/newsletter_repository.dart';
 import '../repository/notice_repository.dart';
+import '../repository/praise_repository.dart';
 import '../repository/weekschedule_repository.dart';
 import '../repository/weather_repository.dart';
 import '../services/fcm_service.dart';
@@ -43,6 +44,7 @@ class DashboardScreen extends StatefulWidget {
     required this.weekscheduleRepository,
     required this.newsletterRepository,
     required this.noticeRepository,
+    required this.praiseRepository,
     required this.freeRepository,
     required this.jobRepository,
     required this.livelihoodRepository,
@@ -52,6 +54,7 @@ class DashboardScreen extends StatefulWidget {
   final WeekscheduleRepository weekscheduleRepository;
   final NewsletterRepository newsletterRepository;
   final NoticeRepository noticeRepository;
+  final PraiseRepository praiseRepository;
   final FreeRepository freeRepository;
   final JobRepository jobRepository;
   final LivelihoodRepository livelihoodRepository;
@@ -283,6 +286,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     SwipeablePageRoute<void>(
                       builder: (_) => NotificationListScreen(
                         noticeRepository: widget.noticeRepository,
+                        praiseRepository: widget.praiseRepository,
                         freeRepository: widget.freeRepository,
                         jobRepository: widget.jobRepository,
                         livelihoodRepository: widget.livelihoodRepository,
@@ -308,6 +312,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         weekscheduleRepository: widget.weekscheduleRepository,
         newsletterRepository: widget.newsletterRepository,
         noticeRepository: widget.noticeRepository,
+        praiseRepository: widget.praiseRepository,
         freeRepository: widget.freeRepository,
         jobRepository: widget.jobRepository,
         livelihoodRepository: widget.livelihoodRepository,

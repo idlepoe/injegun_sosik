@@ -11,6 +11,7 @@ import '../repository/free_repository.dart';
 import '../repository/job_repository.dart';
 import '../repository/livelihood_repository.dart';
 import '../repository/notice_repository.dart';
+import '../repository/praise_repository.dart';
 import '../screens/article_detail_screen.dart';
 import '../services/fcm_service.dart';
 import '../widgets/dashboard_style.dart';
@@ -20,12 +21,14 @@ class NotificationListScreen extends StatefulWidget {
   const NotificationListScreen({
     super.key,
     required this.noticeRepository,
+    required this.praiseRepository,
     required this.freeRepository,
     required this.jobRepository,
     required this.livelihoodRepository,
   });
 
   final NoticeRepository noticeRepository;
+  final PraiseRepository praiseRepository;
   final FreeRepository freeRepository;
   final JobRepository jobRepository;
   final LivelihoodRepository livelihoodRepository;
@@ -134,6 +137,8 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
         return widget.livelihoodRepository;
       case 'free':
         return widget.freeRepository;
+      case 'praise':
+        return widget.praiseRepository;
       case 'notice':
       case 'weekschedule':
       default:
