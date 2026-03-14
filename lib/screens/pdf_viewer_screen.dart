@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../utils/toast_utils.dart';
 
@@ -31,6 +33,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   int _currentPage = 0;
   int _totalPages = 0;
   bool _isSliding = false;
+  final GlobalKey _shareButtonKey = GlobalKey();
 
   @override
   void initState() {
@@ -130,20 +133,25 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     );
   }
 
-  /// 기기에 저장(다운로드 폴더 등) 후 토스트 표시
-  Future<void> _downloadToDevice() async {
+  /// share_plus로 PDF 공유 (iPad에서는 sharePositionOrigin으로 팝오버 위치 지정)
+  Future<void> _sharePdf() async {
     if (_filePath == null) return;
     try {
-      final downloadsDir = await getDownloadsDirectory();
-      final dir = downloadsDir ?? await getApplicationDocumentsDirectory();
-      final destFile = File('${dir.path}/$_pdfFileName');
-      await File(_filePath!).copy(destFile.path);
-      if (mounted) {
-        ToastUtils.showSuccess(context, '다운받았습니다.');
-      }
+      final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+      final shareOrigin = box != null
+          ? Rect.fromPoints(
+              box.localToGlobal(Offset.zero),
+              box.localToGlobal(Offset(box.size.width, box.size.height)),
+            )
+          : null;
+      await Share.shareXFiles(
+        [XFile(_filePath!, name: _pdfFileName)],
+        subject: widget.title,
+        sharePositionOrigin: shareOrigin,
+      );
     } catch (e) {
       if (mounted) {
-        ToastUtils.showError(context, '저장 실패: $e');
+        ToastUtils.showError(context, '공유 실패: $e');
       }
     }
   }
@@ -156,9 +164,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
         actions: [
           if (_filePath != null)
             IconButton(
-              icon: const Icon(Icons.download),
-              tooltip: '다운로드',
-              onPressed: _downloadToDevice,
+              key: _shareButtonKey,
+              icon: const Icon(Icons.share),
+              tooltip: '공유',
+              onPressed: _sharePdf,
             ),
         ],
       ),
