@@ -6,6 +6,8 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
+import '../utils/toast_utils.dart';
+
 /// PDF 전체화면 뷰어 (다운로드 후 로컬 파일로 표시)
 class PdfViewerScreen extends StatefulWidget {
   const PdfViewerScreen({
@@ -45,7 +47,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       }
 
       final directory = await getTemporaryDirectory();
-      final fileName = widget.pdfUrl.split('/').last;
+      final fileName = _pdfFileName;
       final file = File('${directory.path}/$fileName');
       await file.writeAsBytes(response.bodyBytes);
 
@@ -61,10 +63,43 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     }
   }
 
+  String get _pdfFileName {
+    final fromUrl = widget.pdfUrl.split('/').last;
+    return fromUrl.contains('.pdf') ? fromUrl : '$fromUrl.pdf';
+  }
+
+  /// 기기에 저장(다운로드 폴더 등) 후 토스트 표시
+  Future<void> _downloadToDevice() async {
+    if (_filePath == null) return;
+    try {
+      final downloadsDir = await getDownloadsDirectory();
+      final dir = downloadsDir ?? await getApplicationDocumentsDirectory();
+      final destFile = File('${dir.path}/$_pdfFileName');
+      await File(_filePath!).copy(destFile.path);
+      if (mounted) {
+        ToastUtils.showSuccess(context, '다운받았습니다.');
+      }
+    } catch (e) {
+      if (mounted) {
+        ToastUtils.showError(context, '저장 실패: $e');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: [
+          if (_filePath != null)
+            IconButton(
+              icon: const Icon(Icons.download),
+              tooltip: '다운로드',
+              onPressed: _downloadToDevice,
+            ),
+        ],
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -74,8 +109,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                   : PDFView(
                       filePath: _filePath!,
                       enableSwipe: true,
-                      autoSpacing: false,
-                      pageFling: false,
+                      swipeHorizontal: true,
+                      autoSpacing: true,
+                      pageFling: true,
+                      pageSnap: true,
                       backgroundColor: Colors.grey,
                       onRender: (pages) {
                         if (pages != null) {
