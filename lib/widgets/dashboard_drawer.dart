@@ -76,103 +76,87 @@ class DashboardDrawer extends StatelessWidget {
                     ),
                   ),
                   ListTile(
-              leading: Icon(Icons.campaign, color: tossGreyText),
-              title: Text(
-                '공지사항',
-                style: TextStyle(color: Colors.grey.shade800),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  SwipeablePageRoute<void>(
-                    builder: (_) =>
-                        NoticeListScreen(repository: noticeRepository),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.thumb_up, color: tossGreyText),
-              title: Text(
-                '칭찬합니다',
-                style: TextStyle(color: Colors.grey.shade800),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  SwipeablePageRoute<void>(
-                    builder: (_) =>
-                        PraiseListScreen(repository: praiseRepository),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.newspaper, color: tossGreyText),
-              title: Text(
-                '합강소식지',
-                style: TextStyle(color: Colors.grey.shade800),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  SwipeablePageRoute<void>(
-                    builder: (_) => NewsletterListScreen(
-                      repository: newsletterRepository,
+                    leading: Icon(Icons.campaign, color: tossGreyText),
+                    title: Text(
+                      '공지사항',
+                      style: TextStyle(color: Colors.grey.shade800),
                     ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).push(
+                        SwipeablePageRoute<void>(
+                          builder: (_) =>
+                              NoticeListScreen(repository: noticeRepository),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.forum, color: tossGreyText),
-              title: Text(
-                '자유게시판',
-                style: TextStyle(color: Colors.grey.shade800),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  SwipeablePageRoute<void>(
-                    builder: (_) =>
-                        FreeListScreen(repository: freeRepository),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.work, color: tossGreyText),
-              title: Text(
-                '구인구직',
-                style: TextStyle(color: Colors.grey.shade800),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  SwipeablePageRoute<void>(
-                    builder: (_) =>
-                        JobListScreen(repository: jobRepository),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.store, color: tossGreyText),
-              title: Text(
-                '생활장터',
-                style: TextStyle(color: Colors.grey.shade800),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  SwipeablePageRoute<void>(
-                    builder: (_) => LivelihoodListScreen(
-                      repository: livelihoodRepository,
+                  ListTile(
+                    leading: Icon(Icons.newspaper, color: tossGreyText),
+                    title: Text(
+                      '합강소식지',
+                      style: TextStyle(color: Colors.grey.shade800),
                     ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).push(
+                        SwipeablePageRoute<void>(
+                          builder: (_) => NewsletterListScreen(
+                            repository: newsletterRepository,
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
+                  ListTile(
+                    leading: Icon(Icons.forum, color: tossGreyText),
+                    title: Text(
+                      '자유게시판',
+                      style: TextStyle(color: Colors.grey.shade800),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).push(
+                        SwipeablePageRoute<void>(
+                          builder: (_) =>
+                              FreeListScreen(repository: freeRepository),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.work, color: tossGreyText),
+                    title: Text(
+                      '구인구직',
+                      style: TextStyle(color: Colors.grey.shade800),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).push(
+                        SwipeablePageRoute<void>(
+                          builder: (_) =>
+                              JobListScreen(repository: jobRepository),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.store, color: tossGreyText),
+                    title: Text(
+                      '생활장터',
+                      style: TextStyle(color: Colors.grey.shade800),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).push(
+                        SwipeablePageRoute<void>(
+                          builder: (_) => LivelihoodListScreen(
+                            repository: livelihoodRepository,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                   ListTile(
                     leading: Icon(Icons.event_note, color: tossGreyText),
                     title: Text(
@@ -186,6 +170,22 @@ class DashboardDrawer extends StatelessWidget {
                           builder: (_) => WeekscheduleListScreen(
                             repository: weekscheduleRepository,
                           ),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.thumb_up, color: tossGreyText),
+                    title: Text(
+                      '칭찬합니다',
+                      style: TextStyle(color: Colors.grey.shade800),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).push(
+                        SwipeablePageRoute<void>(
+                          builder: (_) =>
+                              PraiseListScreen(repository: praiseRepository),
                         ),
                       );
                     },
@@ -206,7 +206,10 @@ class DashboardDrawer extends StatelessWidget {
                         Navigator.pop(context);
                         final uri = Uri.parse('mailto:idlepoe@gmail.com');
                         try {
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
                         } catch (_) {}
                       },
                       icon: const Icon(Icons.mail_outline, size: 18),
@@ -216,10 +219,7 @@ class DashboardDrawer extends StatelessWidget {
                   const SizedBox(height: 12),
                   Text(
                     '2026. 황금풍뎅이',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                 ],
               ),

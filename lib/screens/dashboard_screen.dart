@@ -675,7 +675,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           onTap: () {
             if (hasPdf) {
               Navigator.of(context).push(
-                SwipeablePageRoute<void>(
+                SwipeablePageRoute<void>(canOnlySwipeFromEdge: true,
                   builder: (_) => PdfViewerScreen(
                     pdfUrl: newsletter.pdfStorageUrl!,
                     title: newsletter.title,

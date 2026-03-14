@@ -28,6 +28,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   bool _isLoading = true;
   String? _error;
   final Completer<PDFViewController> _controller = Completer<PDFViewController>();
+  int _currentPage = 0;
+  int _totalPages = 0;
+  bool _isSliding = false;
 
   @override
   void initState() {
@@ -68,6 +71,65 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     return fromUrl.contains('.pdf') ? fromUrl : '$fromUrl.pdf';
   }
 
+  Widget _buildPageSlider() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      color: Colors.grey.shade200,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${_currentPage + 1} / $_totalPages',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
+            ),
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                trackHeight: 4,
+              ),
+              child: Slider(
+                value: _currentPage.clamp(0, _totalPages > 0 ? _totalPages - 1 : 0).toDouble(),
+                min: 0,
+                max: _totalPages > 0 ? (_totalPages - 1).toDouble() : 0,
+                divisions: _totalPages > 1 ? _totalPages - 1 : 1,
+                onChanged: (value) {
+                  setState(() {
+                    _isSliding = true;
+                    _currentPage = value.round();
+                  });
+                },
+                onChangeEnd: (value) async {
+                  final page = value.round();
+                  try {
+                    final ctrl = await _controller.future;
+                    await ctrl.setPage(page);
+                  } catch (_) {}
+                  if (mounted) {
+                    setState(() {
+                      _isSliding = false;
+                      _currentPage = page;
+                    });
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// 기기에 저장(다운로드 폴더 등) 후 토스트 표시
   Future<void> _downloadToDevice() async {
     if (_filePath == null) return;
@@ -106,30 +168,48 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               ? Center(child: Text(_error!))
               : _filePath == null
                   ? const Center(child: Text('PDF 파일을 찾을 수 없습니다.'))
-                  : PDFView(
-                      filePath: _filePath!,
-                      enableSwipe: true,
-                      swipeHorizontal: true,
-                      autoSpacing: true,
-                      pageFling: true,
-                      pageSnap: true,
-                      backgroundColor: Colors.grey,
-                      onRender: (pages) {
-                        if (pages != null) {
-                          debugPrint('PDF 렌더링 완료: $pages 페이지');
-                        }
-                      },
-                      onError: (error) {
-                        setState(() {
-                          _error = error.toString();
-                        });
-                      },
-                      onPageError: (page, error) {
-                        debugPrint('$page: ${error.toString()}');
-                      },
-                      onViewCreated: (PDFViewController pdfViewController) {
-                        _controller.complete(pdfViewController);
-                      },
+                  : Column(
+                      children: [
+                        Expanded(
+                          child: PDFView(
+                            filePath: _filePath!,
+                            enableSwipe: true,
+                            swipeHorizontal: true,
+                            autoSpacing: true,
+                            pageFling: true,
+                            pageSnap: true,
+                            backgroundColor: Colors.grey,
+                            onRender: (pages) {
+                              if (pages != null && mounted) {
+                                setState(() {
+                                  _totalPages = pages;
+                                  if (_currentPage >= pages) _currentPage = pages > 0 ? pages - 1 : 0;
+                                });
+                              }
+                            },
+                            onPageChanged: (page, total) {
+                              if (!_isSliding && page != null && total != null && mounted) {
+                                setState(() {
+                                  _currentPage = page;
+                                  _totalPages = total;
+                                });
+                              }
+                            },
+                            onError: (error) {
+                              setState(() {
+                                _error = error.toString();
+                              });
+                            },
+                            onPageError: (page, error) {
+                              debugPrint('$page: ${error.toString()}');
+                            },
+                            onViewCreated: (PDFViewController pdfViewController) {
+                              _controller.complete(pdfViewController);
+                            },
+                          ),
+                        ),
+                        if (_totalPages > 1) _buildPageSlider(),
+                      ],
                     ),
     );
   }
