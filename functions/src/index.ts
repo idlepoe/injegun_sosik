@@ -20,6 +20,7 @@ import { fetchLivelihood } from "./models/fetchLivelihood.js";
 import { fetchFree } from "./models/fetchFree.js";
 import { fetchDashboardSlider } from "./models/fetchDashboardSlider.js";
 import { fetchPraise } from "./models/fetchPraise.js";
+import { fetchSoldiers } from "./models/fetchSoldiers.js";
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -237,8 +238,31 @@ export const fetchPraiseFn = onRequest(
   }
 );
 
+/**
+ * 군장병 우대업소 크롤링: 4개 URL(음식점/숙박업/미용실/PC방) 테이블을 파싱하여 soldiers 컬렉션에 저장
+ * GET 호출. Puppeteer/Chrome 사용으로 메모리 1GiB, 타임아웃 5분
+ */
+export const fetchSoldiersFn = onRequest(
+  { region: "asia-northeast3", maxInstances: 5, memory: "1GiB", timeoutSeconds: 300 },
+  async (req, res) => {
+    if (req.method !== "GET") {
+      res.status(405).set("Allow", "GET").send("Method Not Allowed");
+      return;
+    }
+    try {
+      const result = await fetchSoldiers();
+      logger.info("fetchSoldiers completed", result);
+      res.status(200).json(result);
+    } catch (err) {
+      logger.error("fetchSoldiers failed", err);
+      res.status(500).json({ error: (err as Error).message });
+    }
+  }
+);
+
 export {
   scheduledFetchEveryThreeHours,
   scheduledFetchTwiceDaily,
+  scheduledFetchSoldiersWeekly,
   runFetchEveryThreeHoursFn,
 } from "./scheduled.js";

@@ -283,7 +283,7 @@ as String?,
 /// @nodoc
 mixin _$Article {
 
-/// 게시글 타입 ("weekschedule" | "notice")
+/// 게시글 타입 ("weekschedule" | "notice" | "praise" | "job" | "livelihood" | "free")
  String get type;/// 상세 페이지 URL
  String? get url;/// 글 번호 (상세 진입 키)
  String get articleSeq;/// 게시판 코드
@@ -495,7 +495,7 @@ class _Article implements Article {
   const _Article({required this.type, this.url, required this.articleSeq, this.boardCode, required this.title, required this.author, required this.registeredAt, required this.content, final  List<Attachment> attachments = const []}): _attachments = attachments;
   
 
-/// 게시글 타입 ("weekschedule" | "notice")
+/// 게시글 타입 ("weekschedule" | "notice" | "praise" | "job" | "livelihood" | "free")
 @override final  String type;
 /// 상세 페이지 URL
 @override final  String? url;

@@ -10,6 +10,7 @@ import { fetchNotice } from "./models/fetchNotice.js";
 import { fetchPraise } from "./models/fetchPraise.js";
 import { fetchNewsletters } from "./models/fetchNewsletters.js";
 import { fetchDashboardSlider } from "./models/fetchDashboardSlider.js";
+import { fetchSoldiers } from "./models/fetchSoldiers.js";
 import { sendPushForArticlesUpdatedInLastHour } from "./pushArticleByTopic.js";
 
 const OPT = { maxListPages: 1 } as const;
@@ -99,6 +100,29 @@ export const scheduledFetchTwiceDaily = onSchedule(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       logger.error("scheduledFetchTwiceDaily failed", { error: msg });
+      throw new Error(msg);
+    }
+  }
+);
+
+/**
+ * 스케줄 C: 매주 일요일 6시(Asia/Seoul) — 군장병 우대업소 크롤링
+ */
+export const scheduledFetchSoldiersWeekly = onSchedule(
+  {
+    region: "asia-northeast3",
+    schedule: "0 6 * * 0",
+    timeZone: "Asia/Seoul",
+    timeoutSeconds: 600,
+    memory: "1GiB",
+  },
+  async () => {
+    try {
+      const r = await fetchSoldiers();
+      logger.info("scheduledFetchSoldiersWeekly done", r);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error("scheduledFetchSoldiersWeekly failed", { error: msg });
       throw new Error(msg);
     }
   }
