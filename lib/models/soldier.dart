@@ -41,6 +41,8 @@ abstract class Soldier with _$Soldier {
     String? geohash,
     /// Google Geocoding API place_id (geocoding 성공 시만)
     String? placeId,
+    /// Place 사진 1장 URL (getMedia photoUri, 400x400)
+    String? photoUrl,
   }) = _Soldier;
 
   /// Firestore 문서(Map)에서 생성
@@ -55,6 +57,7 @@ abstract class Soldier with _$Soldier {
       lng: _toDouble(map['lng']),
       geohash: map['geohash'] as String?,
       placeId: map['placeId'] as String?,
+      photoUrl: map['photoUrl'] as String?,
     );
   }
 }

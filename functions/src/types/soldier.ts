@@ -24,4 +24,6 @@ export interface Soldier {
   geohash?: string;
   /** Google Geocoding API place_id (geocoding 성공 시만) */
   placeId?: string;
+  /** Place 사진 1장 URL (getMedia photoUri, 400x400) */
+  photoUrl?: string;
 }

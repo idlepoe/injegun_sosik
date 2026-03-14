@@ -14,6 +14,7 @@ import * as path from "node:path";
 import puppeteer, { type Browser, type Page } from "puppeteer";
 import type { Soldier, SoldierCategory } from "../types/soldier.js";
 import { encodeGeohash, geocodeAddress } from "../utils/geocoding.js";
+import { fetchPlacePhotoUrlByQuery } from "../utils/placeDetails.js";
 
 const BASE_URL = "https://www.inje.go.kr";
 const USER_AGENT =
@@ -163,7 +164,7 @@ function detectTablePattern(
   const secondText = $ths.eq(1).text().trim();
 
   if (count === 4 && firstText === "행정동") return "patternA";
-  if (count === 5 && firstText === "구분" && secondText === "업종") return "patternB";
+  if (count === 5 && secondText === "업종" && (firstText === "구분" || firstText === "행정동")) return "patternB";
   return null;
 }
 
@@ -316,6 +317,23 @@ export async function fetchSoldiers(): Promise<{
       }
     }
     logger.info("[fetchSoldiers] Geocoding done");
+
+    // 상호명(업소명)으로 Place Text Search 후 사진 URL 1장 조회 (400x400 photoUri)
+    for (const row of allRows) {
+      if (!row.name?.trim()) continue;
+      const photoUrl = await fetchPlacePhotoUrlByQuery(row.name, row.address);
+      if (photoUrl) {
+        row.photoUrl = photoUrl;
+        logger.info("[fetchSoldiers] Place photoUrl", {
+          name: row.name,
+          photoUrl,
+        });
+      } else {
+        logger.info("[fetchSoldiers] Place photoUrl 없음", {
+          name: row.name,
+        });
+      }
+    }
 
     // 새 문서 일괄 쓰기 (배치 500건 제한)
     const now = Timestamp.now();
