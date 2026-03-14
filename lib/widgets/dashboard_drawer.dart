@@ -8,6 +8,7 @@ import '../repository/livelihood_repository.dart';
 import '../repository/newsletter_repository.dart';
 import '../repository/notice_repository.dart';
 import '../repository/praise_repository.dart';
+import '../repository/soldier_repository.dart';
 import '../repository/weekschedule_repository.dart';
 import '../screens/free_list_screen.dart';
 import '../screens/job_list_screen.dart';
@@ -15,6 +16,7 @@ import '../screens/livelihood_list_screen.dart';
 import '../screens/newsletter_list_screen.dart';
 import '../screens/notice_list_screen.dart';
 import '../screens/praise_list_screen.dart';
+import '../screens/soldiers_list_screen.dart';
 import '../screens/weekschedule_list_screen.dart';
 import 'dashboard_style.dart';
 
@@ -29,6 +31,7 @@ class DashboardDrawer extends StatelessWidget {
     required this.freeRepository,
     required this.jobRepository,
     required this.livelihoodRepository,
+    required this.soldierRepository,
   });
 
   final WeekscheduleRepository weekscheduleRepository;
@@ -38,6 +41,7 @@ class DashboardDrawer extends StatelessWidget {
   final FreeRepository freeRepository;
   final JobRepository jobRepository;
   final LivelihoodRepository livelihoodRepository;
+  final SoldierRepository soldierRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -186,6 +190,23 @@ class DashboardDrawer extends StatelessWidget {
                         SwipeablePageRoute<void>(
                           builder: (_) =>
                               PraiseListScreen(repository: praiseRepository),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.card_giftcard, color: tossGreyText),
+                    title: Text(
+                      '군장병우대업소(상품권환급)',
+                      style: TextStyle(color: Colors.grey.shade800),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).push(
+                        SwipeablePageRoute<void>(
+                          builder: (_) => SoldiersListScreen(
+                            repository: soldierRepository,
+                          ),
                         ),
                       );
                     },

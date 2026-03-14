@@ -24,7 +24,8 @@ mixin _$Soldier {
  double? get lng;/// geohash (encodeGeohash 결과, geocoding 성공 시만)
  String? get geohash;/// Google Geocoding API place_id (geocoding 성공 시만)
  String? get placeId;/// Place 사진 1장 URL (getMedia photoUri, 400x400)
- String? get photoUrl;
+ String? get photoUrl;/// 최종 반영 시각 (ISO8601 문자열, Firestore updatedAt 변환)
+ String? get updatedAt;
 /// Create a copy of Soldier
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -35,16 +36,16 @@ $SoldierCopyWith<Soldier> get copyWith => _$SoldierCopyWithImpl<Soldier>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Soldier&&(identical(other.district, district) || other.district == district)&&(identical(other.category, category) || other.category == category)&&(identical(other.name, name) || other.name == name)&&(identical(other.address, address) || other.address == address)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng)&&(identical(other.geohash, geohash) || other.geohash == geohash)&&(identical(other.placeId, placeId) || other.placeId == placeId)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Soldier&&(identical(other.district, district) || other.district == district)&&(identical(other.category, category) || other.category == category)&&(identical(other.name, name) || other.name == name)&&(identical(other.address, address) || other.address == address)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng)&&(identical(other.geohash, geohash) || other.geohash == geohash)&&(identical(other.placeId, placeId) || other.placeId == placeId)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,district,category,name,address,phone,lat,lng,geohash,placeId,photoUrl);
+int get hashCode => Object.hash(runtimeType,district,category,name,address,phone,lat,lng,geohash,placeId,photoUrl,updatedAt);
 
 @override
 String toString() {
-  return 'Soldier(district: $district, category: $category, name: $name, address: $address, phone: $phone, lat: $lat, lng: $lng, geohash: $geohash, placeId: $placeId, photoUrl: $photoUrl)';
+  return 'Soldier(district: $district, category: $category, name: $name, address: $address, phone: $phone, lat: $lat, lng: $lng, geohash: $geohash, placeId: $placeId, photoUrl: $photoUrl, updatedAt: $updatedAt)';
 }
 
 
@@ -55,7 +56,7 @@ abstract mixin class $SoldierCopyWith<$Res>  {
   factory $SoldierCopyWith(Soldier value, $Res Function(Soldier) _then) = _$SoldierCopyWithImpl;
 @useResult
 $Res call({
- String district, String category, String name, String address, String phone, double? lat, double? lng, String? geohash, String? placeId, String? photoUrl
+ String district, String category, String name, String address, String phone, double? lat, double? lng, String? geohash, String? placeId, String? photoUrl, String? updatedAt
 });
 
 
@@ -72,7 +73,7 @@ class _$SoldierCopyWithImpl<$Res>
 
 /// Create a copy of Soldier
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? district = null,Object? category = null,Object? name = null,Object? address = null,Object? phone = null,Object? lat = freezed,Object? lng = freezed,Object? geohash = freezed,Object? placeId = freezed,Object? photoUrl = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? district = null,Object? category = null,Object? name = null,Object? address = null,Object? phone = null,Object? lat = freezed,Object? lng = freezed,Object? geohash = freezed,Object? placeId = freezed,Object? photoUrl = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 district: null == district ? _self.district : district // ignore: cast_nullable_to_non_nullable
 as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
@@ -84,6 +85,7 @@ as double?,lng: freezed == lng ? _self.lng : lng // ignore: cast_nullable_to_non
 as double?,geohash: freezed == geohash ? _self.geohash : geohash // ignore: cast_nullable_to_non_nullable
 as String?,placeId: freezed == placeId ? _self.placeId : placeId // ignore: cast_nullable_to_non_nullable
 as String?,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore: cast_nullable_to_non_nullable
+as String?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -169,10 +171,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String district,  String category,  String name,  String address,  String phone,  double? lat,  double? lng,  String? geohash,  String? placeId,  String? photoUrl)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String district,  String category,  String name,  String address,  String phone,  double? lat,  double? lng,  String? geohash,  String? placeId,  String? photoUrl,  String? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Soldier() when $default != null:
-return $default(_that.district,_that.category,_that.name,_that.address,_that.phone,_that.lat,_that.lng,_that.geohash,_that.placeId,_that.photoUrl);case _:
+return $default(_that.district,_that.category,_that.name,_that.address,_that.phone,_that.lat,_that.lng,_that.geohash,_that.placeId,_that.photoUrl,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -190,10 +192,10 @@ return $default(_that.district,_that.category,_that.name,_that.address,_that.pho
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String district,  String category,  String name,  String address,  String phone,  double? lat,  double? lng,  String? geohash,  String? placeId,  String? photoUrl)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String district,  String category,  String name,  String address,  String phone,  double? lat,  double? lng,  String? geohash,  String? placeId,  String? photoUrl,  String? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Soldier():
-return $default(_that.district,_that.category,_that.name,_that.address,_that.phone,_that.lat,_that.lng,_that.geohash,_that.placeId,_that.photoUrl);case _:
+return $default(_that.district,_that.category,_that.name,_that.address,_that.phone,_that.lat,_that.lng,_that.geohash,_that.placeId,_that.photoUrl,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -210,10 +212,10 @@ return $default(_that.district,_that.category,_that.name,_that.address,_that.pho
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String district,  String category,  String name,  String address,  String phone,  double? lat,  double? lng,  String? geohash,  String? placeId,  String? photoUrl)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String district,  String category,  String name,  String address,  String phone,  double? lat,  double? lng,  String? geohash,  String? placeId,  String? photoUrl,  String? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Soldier() when $default != null:
-return $default(_that.district,_that.category,_that.name,_that.address,_that.phone,_that.lat,_that.lng,_that.geohash,_that.placeId,_that.photoUrl);case _:
+return $default(_that.district,_that.category,_that.name,_that.address,_that.phone,_that.lat,_that.lng,_that.geohash,_that.placeId,_that.photoUrl,_that.updatedAt);case _:
   return null;
 
 }
@@ -225,7 +227,7 @@ return $default(_that.district,_that.category,_that.name,_that.address,_that.pho
 
 
 class _Soldier implements Soldier {
-  const _Soldier({required this.district, required this.category, required this.name, required this.address, required this.phone, this.lat, this.lng, this.geohash, this.placeId, this.photoUrl});
+  const _Soldier({required this.district, required this.category, required this.name, required this.address, required this.phone, this.lat, this.lng, this.geohash, this.placeId, this.photoUrl, this.updatedAt});
   
 
 /// 행정동(구분)
@@ -248,6 +250,8 @@ class _Soldier implements Soldier {
 @override final  String? placeId;
 /// Place 사진 1장 URL (getMedia photoUri, 400x400)
 @override final  String? photoUrl;
+/// 최종 반영 시각 (ISO8601 문자열, Firestore updatedAt 변환)
+@override final  String? updatedAt;
 
 /// Create a copy of Soldier
 /// with the given fields replaced by the non-null parameter values.
@@ -259,16 +263,16 @@ _$SoldierCopyWith<_Soldier> get copyWith => __$SoldierCopyWithImpl<_Soldier>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Soldier&&(identical(other.district, district) || other.district == district)&&(identical(other.category, category) || other.category == category)&&(identical(other.name, name) || other.name == name)&&(identical(other.address, address) || other.address == address)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng)&&(identical(other.geohash, geohash) || other.geohash == geohash)&&(identical(other.placeId, placeId) || other.placeId == placeId)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Soldier&&(identical(other.district, district) || other.district == district)&&(identical(other.category, category) || other.category == category)&&(identical(other.name, name) || other.name == name)&&(identical(other.address, address) || other.address == address)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng)&&(identical(other.geohash, geohash) || other.geohash == geohash)&&(identical(other.placeId, placeId) || other.placeId == placeId)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,district,category,name,address,phone,lat,lng,geohash,placeId,photoUrl);
+int get hashCode => Object.hash(runtimeType,district,category,name,address,phone,lat,lng,geohash,placeId,photoUrl,updatedAt);
 
 @override
 String toString() {
-  return 'Soldier(district: $district, category: $category, name: $name, address: $address, phone: $phone, lat: $lat, lng: $lng, geohash: $geohash, placeId: $placeId, photoUrl: $photoUrl)';
+  return 'Soldier(district: $district, category: $category, name: $name, address: $address, phone: $phone, lat: $lat, lng: $lng, geohash: $geohash, placeId: $placeId, photoUrl: $photoUrl, updatedAt: $updatedAt)';
 }
 
 
@@ -279,7 +283,7 @@ abstract mixin class _$SoldierCopyWith<$Res> implements $SoldierCopyWith<$Res> {
   factory _$SoldierCopyWith(_Soldier value, $Res Function(_Soldier) _then) = __$SoldierCopyWithImpl;
 @override @useResult
 $Res call({
- String district, String category, String name, String address, String phone, double? lat, double? lng, String? geohash, String? placeId, String? photoUrl
+ String district, String category, String name, String address, String phone, double? lat, double? lng, String? geohash, String? placeId, String? photoUrl, String? updatedAt
 });
 
 
@@ -296,7 +300,7 @@ class __$SoldierCopyWithImpl<$Res>
 
 /// Create a copy of Soldier
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? district = null,Object? category = null,Object? name = null,Object? address = null,Object? phone = null,Object? lat = freezed,Object? lng = freezed,Object? geohash = freezed,Object? placeId = freezed,Object? photoUrl = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? district = null,Object? category = null,Object? name = null,Object? address = null,Object? phone = null,Object? lat = freezed,Object? lng = freezed,Object? geohash = freezed,Object? placeId = freezed,Object? photoUrl = freezed,Object? updatedAt = freezed,}) {
   return _then(_Soldier(
 district: null == district ? _self.district : district // ignore: cast_nullable_to_non_nullable
 as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
@@ -308,6 +312,7 @@ as double?,lng: freezed == lng ? _self.lng : lng // ignore: cast_nullable_to_non
 as double?,geohash: freezed == geohash ? _self.geohash : geohash // ignore: cast_nullable_to_non_nullable
 as String?,placeId: freezed == placeId ? _self.placeId : placeId // ignore: cast_nullable_to_non_nullable
 as String?,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore: cast_nullable_to_non_nullable
+as String?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

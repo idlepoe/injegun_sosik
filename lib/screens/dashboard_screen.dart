@@ -19,6 +19,7 @@ import '../repository/livelihood_repository.dart';
 import '../repository/newsletter_repository.dart';
 import '../repository/notice_repository.dart';
 import '../repository/praise_repository.dart';
+import '../repository/soldier_repository.dart';
 import '../repository/weekschedule_repository.dart';
 import '../repository/weather_repository.dart';
 import '../services/fcm_service.dart';
@@ -50,6 +51,7 @@ class DashboardScreen extends StatefulWidget {
     required this.freeRepository,
     required this.jobRepository,
     required this.livelihoodRepository,
+    required this.soldierRepository,
     required this.weatherRepository,
   });
 
@@ -60,6 +62,7 @@ class DashboardScreen extends StatefulWidget {
   final FreeRepository freeRepository;
   final JobRepository jobRepository;
   final LivelihoodRepository livelihoodRepository;
+  final SoldierRepository soldierRepository;
   final WeatherRepository weatherRepository;
 
   @override
@@ -403,6 +406,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         freeRepository: widget.freeRepository,
         jobRepository: widget.jobRepository,
         livelihoodRepository: widget.livelihoodRepository,
+        soldierRepository: widget.soldierRepository,
       ),
       body: SafeArea(
         child: UpgradeAlert(

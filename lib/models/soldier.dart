@@ -43,6 +43,8 @@ abstract class Soldier with _$Soldier {
     String? placeId,
     /// Place 사진 1장 URL (getMedia photoUri, 400x400)
     String? photoUrl,
+    /// 최종 반영 시각 (ISO8601 문자열, Firestore updatedAt 변환)
+    String? updatedAt,
   }) = _Soldier;
 
   /// Firestore 문서(Map)에서 생성
@@ -58,6 +60,7 @@ abstract class Soldier with _$Soldier {
       geohash: map['geohash'] as String?,
       placeId: map['placeId'] as String?,
       photoUrl: map['photoUrl'] as String?,
+      updatedAt: map['updatedAt'] as String?,
     );
   }
 }

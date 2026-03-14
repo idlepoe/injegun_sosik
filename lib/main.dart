@@ -13,6 +13,7 @@ import 'repository/livelihood_repository.dart';
 import 'repository/newsletter_repository.dart';
 import 'repository/notice_repository.dart';
 import 'repository/praise_repository.dart';
+import 'repository/soldier_repository.dart';
 import 'repository/weekschedule_repository.dart';
 import 'repository/weather_repository.dart';
 import 'screens/dashboard_screen.dart';
@@ -38,6 +39,7 @@ void main() async {
   final freeRepository = FreeRepository();
   final jobRepository = JobRepository();
   final livelihoodRepository = LivelihoodRepository();
+  final soldierRepository = SoldierRepository();
   final weatherRepository = WeatherRepository();
 
   final homeWidget = DashboardScreen(
@@ -48,6 +50,7 @@ void main() async {
     freeRepository: freeRepository,
     jobRepository: jobRepository,
     livelihoodRepository: livelihoodRepository,
+    soldierRepository: soldierRepository,
     weatherRepository: weatherRepository,
   );
 
@@ -59,6 +62,7 @@ void main() async {
         freeRepository: freeRepository,
         jobRepository: jobRepository,
         livelihoodRepository: livelihoodRepository,
+        soldierRepository: soldierRepository,
         weatherRepository: weatherRepository,
       ));
   await FcmService().initialize();
