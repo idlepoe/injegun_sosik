@@ -263,6 +263,6 @@ export const fetchSoldiersFn = onRequest(
 export {
   scheduledFetchEveryThreeHours,
   scheduledFetchTwiceDaily,
-  scheduledFetchSoldiersWeekly,
+  scheduledFetchSoldiersMonthly,
   runFetchEveryThreeHoursFn,
 } from "./scheduled.js";

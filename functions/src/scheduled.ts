@@ -106,12 +106,12 @@ export const scheduledFetchTwiceDaily = onSchedule(
 );
 
 /**
- * 스케줄 C: 매주 일요일 6시(Asia/Seoul) — 군장병 우대업소 크롤링
+ * 스케줄 C: 매월 1일 6시(Asia/Seoul) — 군장병 우대업소 크롤링 (한 달에 한 번)
  */
-export const scheduledFetchSoldiersWeekly = onSchedule(
+export const scheduledFetchSoldiersMonthly = onSchedule(
   {
     region: "asia-northeast3",
-    schedule: "0 6 * * 0",
+    schedule: "0 6 1 * *",
     timeZone: "Asia/Seoul",
     timeoutSeconds: 600,
     memory: "1GiB",
@@ -119,10 +119,10 @@ export const scheduledFetchSoldiersWeekly = onSchedule(
   async () => {
     try {
       const r = await fetchSoldiers();
-      logger.info("scheduledFetchSoldiersWeekly done", r);
+      logger.info("scheduledFetchSoldiersMonthly done", r);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      logger.error("scheduledFetchSoldiersWeekly failed", { error: msg });
+      logger.error("scheduledFetchSoldiersMonthly failed", { error: msg });
       throw new Error(msg);
     }
   }
