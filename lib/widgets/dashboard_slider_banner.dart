@@ -11,7 +11,6 @@ import 'dashboard_style.dart';
 class DashboardSliderBanner extends StatelessWidget {
   const DashboardSliderBanner({super.key});
 
-  static const double _height = 168;
   static const double _dotSize = 6;
   static const double _dotSpacing = 6;
 
@@ -56,6 +55,7 @@ class _SliderContentState extends State<_SliderContent> {
   @override
   Widget build(BuildContext context) {
     final items = widget.items;
+    final bannerHeight = MediaQuery.sizeOf(context).height * 0.2;
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -71,7 +71,7 @@ class _SliderContentState extends State<_SliderContent> {
               )
               .toList(),
           options: CarouselOptions(
-            height: DashboardSliderBanner._height,
+            height: bannerHeight,
             viewportFraction: 1.0,
             enlargeCenterPage: false,
             autoPlay: true,
@@ -89,7 +89,9 @@ class _SliderContentState extends State<_SliderContent> {
             children: List.generate(
               items.length,
               (i) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: DashboardSliderBanner._dotSpacing / 2),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: DashboardSliderBanner._dotSpacing / 2,
+                ),
                 width: DashboardSliderBanner._dotSize,
                 height: DashboardSliderBanner._dotSize,
                 decoration: BoxDecoration(
@@ -134,12 +136,14 @@ class _BannerTile extends StatelessWidget {
             )
           : CachedNetworkImage(
               imageUrl: url,
-              fit: BoxFit.cover,
+              fit: BoxFit.fill,
               width: double.infinity,
               height: double.infinity,
               placeholder: (_, __) => Container(
                 color: Colors.grey.shade200,
-                child: const Center(child: CircularProgressIndicator(color: tossBlue)),
+                child: const Center(
+                  child: CircularProgressIndicator(color: tossBlue),
+                ),
               ),
               errorWidget: (_, __, e) => Container(
                 color: Colors.grey.shade200,
