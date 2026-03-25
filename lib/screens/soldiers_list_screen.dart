@@ -124,9 +124,7 @@ class _SoldiersListScreenState extends State<SoldiersListScreen> {
             onPressed: () async {
               Navigator.pop(context);
               final uri = Uri.parse(_infoUrl);
-              try {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              } catch (_) {}
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
             },
             child: const Text('원본 페이지 보기'),
           ),
@@ -397,8 +395,7 @@ class _SoldiersListScreenState extends State<SoldiersListScreen> {
                           width: double.infinity,
                           height: 120,
                           fit: BoxFit.cover,
-                          placeholder: (_, _) =>
-                              _bottomSheetPhotoPlaceholder(),
+                          placeholder: (_, _) => _bottomSheetPhotoPlaceholder(),
                           errorWidget: (_, _, _) =>
                               _bottomSheetPhotoPlaceholder(),
                         ),
@@ -437,8 +434,7 @@ class _SoldiersListScreenState extends State<SoldiersListScreen> {
                           markers: {
                             Marker(
                               markerId: MarkerId('soldier_${soldier.name}'),
-                              position: LatLng(
-                                  soldier.lat!, soldier.lng!),
+                              position: LatLng(soldier.lat!, soldier.lng!),
                               consumeTapEvents: true,
                               infoWindow: InfoWindow(
                                 title: soldier.name,
@@ -497,15 +493,10 @@ class _SoldiersListScreenState extends State<SoldiersListScreen> {
       child: Icon(Icons.store, color: Colors.grey.shade500, size: 48),
     );
   }
-
 }
 
 class _SoldierTile extends StatelessWidget {
-  const _SoldierTile({
-    required this.soldier,
-    this.distanceKm,
-    this.onTap,
-  });
+  const _SoldierTile({required this.soldier, this.distanceKm, this.onTap});
 
   final Soldier soldier;
   final double? distanceKm;
@@ -518,12 +509,13 @@ class _SoldierTile extends StatelessWidget {
       children: [
         const Divider(height: 1),
         InkWell(
-          onTap: onTap ??
+          onTap:
+              onTap ??
               () => openNaverMap(
-                    soldier.address.isNotEmpty
-                        ? '${soldier.name} ${soldier.address}'
-                        : soldier.name,
-                  ),
+                soldier.address.isNotEmpty
+                    ? '${soldier.name} ${soldier.address}'
+                    : soldier.name,
+              ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(

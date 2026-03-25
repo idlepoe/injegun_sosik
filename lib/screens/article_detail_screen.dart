@@ -95,11 +95,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   }
 
   Future<void> _openUrl(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    final uri = Uri.parse(url);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   static String _resolveImageUrl(String src) {

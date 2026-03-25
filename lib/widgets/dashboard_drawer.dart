@@ -226,12 +226,10 @@ class DashboardDrawer extends StatelessWidget {
                       onPressed: () async {
                         Navigator.pop(context);
                         final uri = Uri.parse('mailto:idlepoe@gmail.com');
-                        try {
-                          await launchUrl(
-                            uri,
-                            mode: LaunchMode.externalApplication,
-                          );
-                        } catch (_) {}
+                        await launchUrl(
+                          uri,
+                          mode: LaunchMode.externalApplication,
+                        );
                       },
                       icon: const Icon(Icons.mail_outline, size: 18),
                       label: const Text('문의하기'),

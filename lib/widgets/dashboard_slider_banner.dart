@@ -164,11 +164,8 @@ class _BannerTile extends StatelessWidget {
       content = GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () async {
-          final uri = Uri.tryParse(linkUrl);
-          if (uri == null) return;
-          try {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          } catch (_) {}
+          final uri = Uri.parse(linkUrl);
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
         },
         child: content,
       );
